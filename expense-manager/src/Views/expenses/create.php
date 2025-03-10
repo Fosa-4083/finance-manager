@@ -100,7 +100,7 @@
                                 <label for="description" class="form-label">Beschreibung</label>
                                 <div class="form-group">
                                     <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                                    <div id="descriptionSuggestions" class="suggestions-container debug-visible"></div>
+                                    <div id="descriptionSuggestions" class="suggestions-container"></div>
                                 </div>
                             </div>
                             
@@ -120,7 +120,7 @@
                                 <label for="value" class="form-label">Betrag (€)</label>
                                 <div class="form-group">
                                     <input type="number" class="form-control" id="value" name="value" step="0.01" min="0.01" required>
-                                    <div id="valueSuggestions" class="suggestions-container debug-visible"></div>
+                                    <div id="valueSuggestions" class="suggestions-container"></div>
                                 </div>
                             </div>
                             

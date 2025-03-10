@@ -7,6 +7,40 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .suggestions-container {
+            display: none;
+            position: absolute;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            margin-top: 2px;
+        }
+        
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .suggestion-item:hover, .suggestion-item:focus {
+            background-color: #f0f7ff;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        .form-group {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
 <body class="bg-light">
     <?php include VIEW_PATH . 'partials/navbar.php'; ?>
@@ -68,7 +102,10 @@
                     </div>
                     <div class="col-md-2">
                         <label for="quick_description" class="form-label">Beschreibung</label>
-                        <input type="text" class="form-control" id="quick_description" name="description" required>
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="quick_description" name="description" required>
+                            <div id="descriptionSuggestions" class="suggestions-container"></div>
+                        </div>
                     </div>
                     <div class="col-md-2">
                         <label for="quick_project" class="form-label">Projekt</label>
@@ -86,7 +123,10 @@
                     </div>
                     <div class="col-md-2">
                         <label for="quick_value" class="form-label">Betrag (€)</label>
-                        <input type="number" class="form-control" id="quick_value" name="value" step="0.01" required>
+                        <div class="form-group">
+                            <input type="number" class="form-control" id="quick_value" name="value" step="0.01" required>
+                            <div id="valueSuggestions" class="suggestions-container"></div>
+                        </div>
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
                         <button type="submit" class="btn btn-success w-100">
@@ -417,5 +457,261 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- JavaScript für Vorschlagsfunktion -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const descriptionInput = document.getElementById('quick_description');
+            const valueInput = document.getElementById('quick_value');
+            const categorySelect = document.getElementById('quick_category');
+            const projectSelect = document.getElementById('quick_project');
+            const descriptionSuggestions = document.getElementById('descriptionSuggestions');
+            const valueSuggestions = document.getElementById('valueSuggestions');
+
+            let debounceTimer;
+            let currentSuggestionIndex = -1;
+            let currentSuggestions = [];
+
+            // Funktion für Beschreibungsvorschläge
+            function fetchDescriptionSuggestions() {
+                const query = descriptionInput.value.trim();
+                
+                if (query.length < 2) {
+                    descriptionSuggestions.style.display = 'none';
+                    return;
+                }
+
+                const categoryId = categorySelect.value;
+                const projectId = projectSelect.value;
+                
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`;
+
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Server-Antwort nicht OK');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (!data || data.length === 0) {
+                            descriptionSuggestions.style.display = 'none';
+                            return;
+                        }
+                        
+                        currentSuggestions = data;
+                        currentSuggestionIndex = -1;
+                        
+                        descriptionSuggestions.innerHTML = '';
+                        
+                        data.forEach((item, index) => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.dataset.index = index;
+                            
+                            // Anzahl der Verwendungen anzeigen
+                            if (item.count && item.count > 1) {
+                                div.innerHTML = `${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                            } else {
+                                div.textContent = item.description;
+                            }
+                            
+                            div.addEventListener('click', () => {
+                                applyDescriptionSuggestion(item);
+                            });
+                            descriptionSuggestions.appendChild(div);
+                        });
+                        
+                        descriptionSuggestions.style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Abrufen der Vorschläge:', error);
+                        descriptionSuggestions.style.display = 'none';
+                    });
+            }
+
+            // Funktion zum Anwenden eines Beschreibungsvorschlags
+            function applyDescriptionSuggestion(item) {
+                descriptionInput.value = item.description;
+                
+                // Betrag übernehmen, wenn vorhanden
+                if (item.value) {
+                    valueInput.value = Math.abs(item.value);
+                }
+                
+                // Kategorie auswählen, wenn vorhanden und keine ausgewählt ist
+                if (item.category_id && categorySelect.value === '') {
+                    categorySelect.value = item.category_id;
+                    // Typ der Buchung aktualisieren (Einnahme/Ausgabe)
+                    updateCategoryType();
+                }
+                
+                descriptionSuggestions.style.display = 'none';
+            }
+
+            // Funktion für Betragsvorschläge
+            function fetchValueSuggestions() {
+                const categoryId = categorySelect.value;
+                if (!categoryId) {
+                    valueSuggestions.style.display = 'none';
+                    return;
+                }
+
+                const projectId = projectSelect.value;
+                
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}`;
+                
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Server-Antwort nicht OK');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (!data || data.length === 0) {
+                            valueSuggestions.style.display = 'none';
+                            return;
+                        }
+                        
+                        currentSuggestions = data;
+                        currentSuggestionIndex = -1;
+                        
+                        valueSuggestions.innerHTML = '';
+                        
+                        data.forEach((item, index) => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.dataset.index = index;
+                            
+                            // Formatierter Betrag mit Beschreibung und Häufigkeit
+                            if (item.count && item.count > 1) {
+                                div.innerHTML = `${Math.abs(item.value).toFixed(2)} € - ${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                            } else {
+                                div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
+                            }
+                            
+                            div.addEventListener('click', () => {
+                                valueInput.value = Math.abs(item.value);
+                                valueSuggestions.style.display = 'none';
+                            });
+                            valueSuggestions.appendChild(div);
+                        });
+                        
+                        valueSuggestions.style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Abrufen der Wertvorschläge:', error);
+                        valueSuggestions.style.display = 'none';
+                    });
+            }
+
+            // Funktion zur Aktualisierung des Typs (Einnahme/Ausgabe) basierend auf der ausgewählten Kategorie
+            function updateCategoryType() {
+                const categoryOption = categorySelect.options[categorySelect.selectedIndex];
+                if (categoryOption) {
+                    const type = categoryOption.getAttribute('data-type');
+                    // Hier können Sie den Typ der Buchung setzen (falls nötig)
+                }
+            }
+
+            // Tastaturnavigation für Vorschläge
+            function handleKeyNavigation(e, suggestionContainer) {
+                const suggestionItems = suggestionContainer.querySelectorAll('.suggestion-item');
+                
+                if (!suggestionItems.length || suggestionContainer.style.display === 'none') {
+                    return;
+                }
+                
+                // Pfeil nach unten
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentSuggestionIndex = Math.min(currentSuggestionIndex + 1, suggestionItems.length - 1);
+                    highlightSuggestion(suggestionItems);
+                }
+                
+                // Pfeil nach oben
+                else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentSuggestionIndex = Math.max(currentSuggestionIndex - 1, 0);
+                    highlightSuggestion(suggestionItems);
+                }
+                
+                // Enter-Taste
+                else if (e.key === 'Enter' && currentSuggestionIndex >= 0) {
+                    e.preventDefault();
+                    suggestionItems[currentSuggestionIndex].click();
+                }
+                
+                // Escape-Taste
+                else if (e.key === 'Escape') {
+                    suggestionContainer.style.display = 'none';
+                    currentSuggestionIndex = -1;
+                }
+            }
+            
+            // Markiert den ausgewählten Vorschlag
+            function highlightSuggestion(items) {
+                items.forEach((item, index) => {
+                    if (index === currentSuggestionIndex) {
+                        item.classList.add('bg-primary', 'text-white');
+                        item.scrollIntoView({ block: 'nearest' });
+                    } else {
+                        item.classList.remove('bg-primary', 'text-white');
+                    }
+                });
+            }
+
+            // Event-Listener
+            descriptionInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(fetchDescriptionSuggestions, 300);
+            });
+            
+            descriptionInput.addEventListener('keydown', (e) => {
+                handleKeyNavigation(e, descriptionSuggestions);
+            });
+
+            valueInput.addEventListener('focus', fetchValueSuggestions);
+            
+            valueInput.addEventListener('keydown', (e) => {
+                handleKeyNavigation(e, valueSuggestions);
+            });
+
+            categorySelect.addEventListener('change', () => {
+                updateCategoryType();
+                if (descriptionInput.value.trim().length >= 2) {
+                    fetchDescriptionSuggestions();
+                }
+                if (document.activeElement === valueInput) {
+                    fetchValueSuggestions();
+                }
+            });
+
+            projectSelect.addEventListener('change', () => {
+                if (descriptionInput.value.trim().length >= 2) {
+                    fetchDescriptionSuggestions();
+                }
+                if (document.activeElement === valueInput) {
+                    fetchValueSuggestions();
+                }
+            });
+
+            // Klick außerhalb schließt Vorschläge
+            document.addEventListener('click', (e) => {
+                if (!descriptionInput.contains(e.target) && !descriptionSuggestions.contains(e.target)) {
+                    descriptionSuggestions.style.display = 'none';
+                }
+                if (!valueInput.contains(e.target) && !valueSuggestions.contains(e.target)) {
+                    valueSuggestions.style.display = 'none';
+                }
+            });
+        });
+    </script>
+
+    <script>
+        // Bestehendes JavaScript für Charts
+// ... existing code ...
+    </script>
 </body>
 </html> 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buchung bearbeiten - Finanzverwaltung</title>
+    <title>Buchung bearbeiten - Ausgabenverwaltung</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
@@ -18,7 +18,7 @@
             border-radius: 4px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             z-index: 1000;
-            margin-top: 2px; /* Abstand zum Eingabefeld */
+            margin-top: 2px;
         }
         
         .suggestion-item {
@@ -38,12 +38,6 @@
         .form-group {
             position: relative;
             margin-bottom: 1rem;
-        }
-        
-        /* Debug-Stil für Sichtbarkeit */
-        .debug-visible {
-            border: 2px solid red !important;
-            min-height: 30px;
         }
     </style>
 </head>
@@ -105,7 +99,7 @@
                                 <div class="form-group">
                                     <textarea class="form-control" id="description" name="description" 
                                               rows="3"><?= htmlspecialchars($expense['description']); ?></textarea>
-                                    <div id="descriptionSuggestions" class="suggestions-container debug-visible"></div>
+                                    <div id="descriptionSuggestions" class="suggestions-container"></div>
                                 </div>
                             </div>
                             
@@ -128,7 +122,7 @@
                                 <div class="form-group">
                                     <input type="number" class="form-control" id="value" name="value" 
                                            step="0.01" min="0.01" value="<?= abs($expense['value']); ?>" required>
-                                    <div id="valueSuggestions" class="suggestions-container debug-visible"></div>
+                                    <div id="valueSuggestions" class="suggestions-container"></div>
                                 </div>
                             </div>
                             
@@ -158,16 +152,6 @@
             const projectSelect = document.getElementById('project_id');
             const descriptionSuggestions = document.getElementById('descriptionSuggestions');
             const valueSuggestions = document.getElementById('valueSuggestions');
-            
-            // Debug-Ausgabe für DOM-Elemente
-            console.log('DOM-Elemente:', {
-                descriptionInput: descriptionInput,
-                valueInput: valueInput,
-                categorySelect: categorySelect,
-                projectSelect: projectSelect,
-                descriptionSuggestions: descriptionSuggestions,
-                valueSuggestions: valueSuggestions
-            });
 
             let debounceTimer;
             let currentSuggestionIndex = -1;
@@ -176,7 +160,6 @@
             // Funktion für Beschreibungsvorschläge
             function fetchDescriptionSuggestions() {
                 const query = descriptionInput.value.trim();
-                console.log('Beschreibungssuche:', query);
                 
                 if (query.length < 2) {
                     descriptionSuggestions.style.display = 'none';
@@ -187,7 +170,6 @@
                 const projectId = projectSelect.value;
                 
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`;
-                console.log('Anfrage-URL:', url);
 
                 // Direktes Einfügen von Test-Vorschlägen, falls die API-Anfrage fehlschlägt
                 const testSuggestions = [
@@ -199,14 +181,12 @@
                 // Timeout für die Fetch-Anfrage setzen
                 const fetchPromise = fetch(url)
                     .then(response => {
-                        console.log('Server-Antwort:', response);
                         if (!response.ok) {
                             throw new Error('Server-Antwort nicht OK');
                         }
                         return response.json();
                     })
                     .catch(error => {
-                        console.error('Fehler beim Abrufen der Vorschläge:', error);
                         // Bei Fehlern Test-Vorschläge zurückgeben
                         return testSuggestions;
                     });
@@ -214,7 +194,6 @@
                 // Promise mit Timeout
                 const timeoutPromise = new Promise((resolve) => {
                     setTimeout(() => {
-                        console.log('Timeout - Verwende Test-Vorschläge');
                         resolve(testSuggestions);
                     }, 2000); // 2 Sekunden Timeout
                 });
@@ -222,10 +201,7 @@
                 // Verwende das Promise, das zuerst erfüllt wird
                 Promise.race([fetchPromise, timeoutPromise])
                     .then(data => {
-                        console.log('Vorschlagsdaten:', data);
-                        
                         if (!data || data.length === 0) {
-                            console.log('Keine Vorschläge gefunden, verwende Test-Vorschläge');
                             data = testSuggestions;
                         }
                         
@@ -253,7 +229,6 @@
                         });
                         
                         descriptionSuggestions.style.display = 'block';
-                        console.log('Vorschläge angezeigt:', descriptionSuggestions.style.display);
                     });
             }
 
@@ -290,7 +265,6 @@
                 const projectId = projectSelect.value;
                 
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}`;
-                console.log('Anfrage-URL (Wert):', url);
                 
                 // Direktes Einfügen von Test-Vorschlägen, falls die API-Anfrage fehlschlägt
                 const testSuggestions = [
@@ -302,14 +276,12 @@
                 // Timeout für die Fetch-Anfrage setzen
                 const fetchPromise = fetch(url)
                     .then(response => {
-                        console.log('Server-Antwort (Wert):', response);
                         if (!response.ok) {
                             throw new Error('Server-Antwort nicht OK');
                         }
                         return response.json();
                     })
                     .catch(error => {
-                        console.error('Fehler beim Abrufen der Wertvorschläge:', error);
                         // Bei Fehlern Test-Vorschläge zurückgeben
                         return testSuggestions;
                     });
@@ -317,7 +289,6 @@
                 // Promise mit Timeout
                 const timeoutPromise = new Promise((resolve) => {
                     setTimeout(() => {
-                        console.log('Timeout - Verwende Test-Wertvorschläge');
                         resolve(testSuggestions);
                     }, 2000); // 2 Sekunden Timeout
                 });
@@ -325,10 +296,7 @@
                 // Verwende das Promise, das zuerst erfüllt wird
                 Promise.race([fetchPromise, timeoutPromise])
                     .then(data => {
-                        console.log('Wertvorschlagsdaten:', data);
-                        
                         if (!data || data.length === 0) {
-                            console.log('Keine Wertvorschläge gefunden, verwende Test-Vorschläge');
                             data = testSuggestions;
                         }
                         
