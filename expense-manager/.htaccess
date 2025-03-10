@@ -1,0 +1,28 @@
+Options +FollowSymLinks
+RewriteEngine On
+
+# Basis-URL setzen
+RewriteBase /expense-manager
+
+# Wenn die Anfrage keine existierende Datei oder Verzeichnis betrifft
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Leite alle Anfragen an index.php weiter
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# PHP-Fehler anzeigen (während der Entwicklung)
+php_flag display_errors on
+php_value error_reporting E_ALL
+
+# Verzeichnisschutz für sensible Ordner
+<FilesMatch "^(.env|composer.json|composer.lock)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Erlaube Zugriff auf das public Verzeichnis
+<Directory "public">
+    Require all granted
+    Allow from all
+</Directory> 
