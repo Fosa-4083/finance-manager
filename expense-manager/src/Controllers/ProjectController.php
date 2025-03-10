@@ -74,24 +74,24 @@ class ProjectController {
             
             if (empty($this->project->name)) {
                 $_SESSION['error'] = 'Der Projektname ist erforderlich.';
-                header('Location: /projects/create');
+                header('Location: ' . \Utils\Path::url('/projects/create'));
                 exit;
             }
             
             // Prüfen, ob ein Projekt mit diesem Namen bereits existiert
             if ($this->project->existsWithName($this->project->name)) {
                 $_SESSION['error'] = 'Ein Projekt mit diesem Namen existiert bereits.';
-                header('Location: /projects/create');
+                header('Location: ' . \Utils\Path::url('/projects/create'));
                 exit;
             }
             
             if ($this->project->save()) {
                 $_SESSION['success'] = 'Projekt erfolgreich erstellt.';
-                header('Location: /projects');
+                header('Location: ' . \Utils\Path::url('/projects'));
                 exit;
             } else {
                 $_SESSION['error'] = 'Fehler beim Erstellen des Projekts.';
-                header('Location: /projects/create');
+                header('Location: ' . \Utils\Path::url('/projects/create'));
                 exit;
             }
         }
@@ -103,7 +103,7 @@ class ProjectController {
             include VIEW_PATH . 'projects/edit.php';
         } else {
             $_SESSION['error'] = 'Projekt nicht gefunden.';
-            header('Location: /projects');
+            header('Location: ' . \Utils\Path::url('/projects'));
             exit;
         }
     }
@@ -112,7 +112,7 @@ class ProjectController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$this->project->findById($id)) {
                 $_SESSION['error'] = 'Projekt nicht gefunden.';
-                header('Location: /projects');
+                header('Location: ' . \Utils\Path::url('/projects'));
                 exit;
             }
             
@@ -125,24 +125,24 @@ class ProjectController {
             
             if (empty($this->project->name)) {
                 $_SESSION['error'] = 'Der Projektname ist erforderlich.';
-                header("Location: /projects/edit?id=$id");
+                header("Location: " . \Utils\Path::url('/projects/edit?id=$id'));
                 exit;
             }
             
             // Prüfen, ob ein anderes Projekt mit diesem Namen bereits existiert
             if ($this->project->existsWithName($this->project->name, $id)) {
                 $_SESSION['error'] = 'Ein anderes Projekt mit diesem Namen existiert bereits.';
-                header("Location: /projects/edit?id=$id");
+                header("Location: " . \Utils\Path::url('/projects/edit?id=$id'));
                 exit;
             }
             
             if ($this->project->save()) {
                 $_SESSION['success'] = 'Projekt erfolgreich aktualisiert.';
-                header('Location: /projects');
+                header('Location: ' . \Utils\Path::url('/projects'));
                 exit;
             } else {
                 $_SESSION['error'] = 'Fehler beim Aktualisieren des Projekts.';
-                header("Location: /projects/edit/$id");
+                header("Location: " . \Utils\Path::url('/projects/edit/$id'));
                 exit;
             }
         }
@@ -153,7 +153,7 @@ class ProjectController {
         
         if (!$id) {
             $_SESSION['error'] = 'Keine Projekt-ID angegeben.';
-            header('Location: /projects');
+            header('Location: ' . \Utils\Path::url('/projects'));
             exit;
         }
         
@@ -167,7 +167,7 @@ class ProjectController {
             $_SESSION['error'] = 'Projekt nicht gefunden.';
         }
         
-        header('Location: /projects');
+        header('Location: ' . \Utils\Path::url('/projects'));
         exit;
     }
 
@@ -176,7 +176,7 @@ class ProjectController {
         
         if (!$id) {
             $_SESSION['error'] = 'Keine Projekt-ID angegeben.';
-            header('Location: /projects');
+            header('Location: ' . \Utils\Path::url('/projects'));
             exit;
         }
         
@@ -190,7 +190,7 @@ class ProjectController {
             include VIEW_PATH . 'projects/show.php';
         } else {
             $_SESSION['error'] = 'Projekt nicht gefunden.';
-            header('Location: /projects');
+            header('Location: ' . \Utils\Path::url('/projects'));
             exit;
         }
     }

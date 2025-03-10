@@ -475,7 +475,7 @@
             }
             
             // Basis-URL mit Zeitraum-Typ
-            let url = `/expenses?period_type=${periodType}`;
+            let url = '<?php echo \Utils\Path::url('/expenses'); ?>?period_type=' + periodType;
             
             // Parameter je nach Zeitraum-Typ hinzufügen
             if (periodType === 'month') {

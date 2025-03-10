@@ -117,7 +117,7 @@ class ExpenseGoalController {
         $stmt->execute([$category_id, $year, $goal]);
         
         $_SESSION['success'] = 'Ausgabenziel erfolgreich erstellt.';
-        header('Location: /expense-goals');
+        header('Location: ' . \Utils\Path::url('/expense-goals'));
         exit;
     }
 
@@ -135,7 +135,7 @@ class ExpenseGoalController {
         
         if (!$expenseGoal) {
             $_SESSION['error'] = 'Ausgabenziel nicht gefunden.';
-            header('Location: /expense-goals');
+            header('Location: ' . \Utils\Path::url('/expense-goals'));
             exit;
         }
         
@@ -155,7 +155,7 @@ class ExpenseGoalController {
         $stmt->execute([$category_id, $year, $goal, $id]);
         
         $_SESSION['success'] = 'Ausgabenziel erfolgreich aktualisiert.';
-        header('Location: /expense-goals');
+        header('Location: ' . \Utils\Path::url('/expense-goals'));
         exit;
     }
 
@@ -166,7 +166,7 @@ class ExpenseGoalController {
         $stmt->execute([$id]);
         
         $_SESSION['success'] = 'Ausgabenziel erfolgreich gelöscht.';
-        header('Location: /expense-goals');
+        header('Location: ' . \Utils\Path::url('/expense-goals'));
         exit;
     }
 } 

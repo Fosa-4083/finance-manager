@@ -79,7 +79,7 @@ if (file_exists($rootHtaccessPath)) {
 $newIndexContent = <<<'EOT'
 <?php
 // Weiterleitung zur expense-manager Anwendung
-header('Location: /expense-manager/');
+header('Location: ' . ('/expense-manager/'));
 exit;
 EOT;
 

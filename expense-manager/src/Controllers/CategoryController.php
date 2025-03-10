@@ -78,7 +78,7 @@ class CategoryController {
         
         if (empty($name)) {
             $_SESSION['error'] = 'Der Kategoriename ist erforderlich.';
-            header('Location: /categories/create');
+            header('Location: ' . \Utils\Path::url('/categories/create'));
             exit;
         }
 
@@ -86,7 +86,7 @@ class CategoryController {
         $stmt->execute([$name, $color, $type, $description]);
         
         $_SESSION['success'] = 'Kategorie erfolgreich erstellt.';
-        header('Location: /categories');
+        header('Location: ' . \Utils\Path::url('/categories'));
         exit;
     }
 
@@ -99,7 +99,7 @@ class CategoryController {
         
         if (!$category) {
             $_SESSION['error'] = 'Kategorie nicht gefunden.';
-            header('Location: /categories');
+            header('Location: ' . \Utils\Path::url('/categories'));
             exit;
         }
         
@@ -123,7 +123,7 @@ class CategoryController {
         $stmt->execute([$name, $color, $type, $description, $id]);
         
         $_SESSION['success'] = 'Kategorie erfolgreich aktualisiert.';
-        header('Location: /categories');
+        header('Location: ' . \Utils\Path::url('/categories'));
         exit;
     }
 
@@ -143,7 +143,7 @@ class CategoryController {
             $_SESSION['success'] = 'Kategorie erfolgreich gelöscht.';
         }
         
-        header('Location: /categories');
+        header('Location: ' . \Utils\Path::url('/categories'));
         exit;
     }
 }

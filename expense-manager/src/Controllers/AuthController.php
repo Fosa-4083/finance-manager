@@ -22,7 +22,7 @@ class AuthController {
     public function showLoginForm() {
         // Wenn bereits angemeldet, zum Dashboard weiterleiten
         if ($this->session->isLoggedIn()) {
-            header('Location: /');
+            header('Location: ' . \Utils\Path::url('/'));
             exit;
         }
 
@@ -36,7 +36,7 @@ class AuthController {
     public function showRegisterForm() {
         // Wenn bereits angemeldet, zum Dashboard weiterleiten
         if ($this->session->isLoggedIn()) {
-            header('Location: /');
+            header('Location: ' . \Utils\Path::url('/'));
             exit;
         }
 
@@ -51,7 +51,7 @@ class AuthController {
         // CSRF-Token validieren
         if (!isset($_POST['csrf_token']) || !$this->session->validateCsrfToken($_POST['csrf_token'])) {
             $this->session->setFlash('error', 'Ungültige Anfrage. Bitte versuchen Sie es erneut.');
-            header('Location: /login');
+            header('Location: ' . \Utils\Path::url('/login'));
             exit;
         }
 
@@ -61,7 +61,7 @@ class AuthController {
 
         if (!$email || empty($password)) {
             $this->session->setFlash('error', 'Bitte geben Sie eine gültige E-Mail-Adresse und ein Passwort ein.');
-            header('Location: /login');
+            header('Location: ' . \Utils\Path::url('/login'));
             exit;
         }
 
@@ -79,12 +79,12 @@ class AuthController {
             );
 
             $this->session->setFlash('success', 'Sie wurden erfolgreich angemeldet.');
-            header('Location: /');
+            header('Location: ' . \Utils\Path::url('/'));
             exit;
         } else {
             error_log("Authentifizierung fehlgeschlagen");
             $this->session->setFlash('error', 'Ungültige E-Mail-Adresse oder Passwort.');
-            header('Location: /login');
+            header('Location: ' . \Utils\Path::url('/login'));
             exit;
         }
     }
@@ -96,7 +96,7 @@ class AuthController {
         // CSRF-Token validieren
         if (!isset($_POST['csrf_token']) || !$this->session->validateCsrfToken($_POST['csrf_token'])) {
             $this->session->setFlash('error', 'Ungültige Anfrage. Bitte versuchen Sie es erneut.');
-            header('Location: /register');
+            header('Location: ' . \Utils\Path::url('/register'));
             exit;
         }
 
@@ -130,7 +130,7 @@ class AuthController {
             foreach ($errors as $error) {
                 $this->session->setFlash('error', $error);
             }
-            header('Location: /register');
+            header('Location: ' . \Utils\Path::url('/register'));
             exit;
         }
 
@@ -144,11 +144,11 @@ class AuthController {
             );
 
             $this->session->setFlash('success', 'Ihr Konto wurde erfolgreich erstellt.');
-            header('Location: /');
+            header('Location: ' . \Utils\Path::url('/'));
             exit;
         } else {
             $this->session->setFlash('error', 'Diese E-Mail-Adresse wird bereits verwendet.');
-            header('Location: /register');
+            header('Location: ' . \Utils\Path::url('/register'));
             exit;
         }
     }
@@ -159,7 +159,7 @@ class AuthController {
     public function logout() {
         $this->session->clearUser();
         $this->session->setFlash('success', 'Sie wurden erfolgreich abgemeldet.');
-        header('Location: /login');
+        header('Location: ' . \Utils\Path::url('/login'));
         exit;
     }
 
@@ -169,7 +169,7 @@ class AuthController {
     public function showProfile() {
         // Prüfen, ob Benutzer angemeldet ist
         if (!$this->session->isLoggedIn()) {
-            header('Location: /login');
+            header('Location: ' . \Utils\Path::url('/login'));
             exit;
         }
 
@@ -187,14 +187,14 @@ class AuthController {
     public function updateProfile() {
         // Prüfen, ob Benutzer angemeldet ist
         if (!$this->session->isLoggedIn()) {
-            header('Location: /login');
+            header('Location: ' . \Utils\Path::url('/login'));
             exit;
         }
 
         // CSRF-Token validieren
         if (!isset($_POST['csrf_token']) || !$this->session->validateCsrfToken($_POST['csrf_token'])) {
             $this->session->setFlash('error', 'Ungültige Anfrage. Bitte versuchen Sie es erneut.');
-            header('Location: /profile');
+            header('Location: ' . \Utils\Path::url('/profile'));
             exit;
         }
 
@@ -243,7 +243,7 @@ class AuthController {
             foreach ($errors as $error) {
                 $this->session->setFlash('error', $error);
             }
-            header('Location: /profile');
+            header('Location: ' . \Utils\Path::url('/profile'));
             exit;
         }
 
@@ -255,7 +255,7 @@ class AuthController {
 
         if (!$this->user->update($data)) {
             $this->session->setFlash('error', 'Fehler beim Aktualisieren des Profils.');
-            header('Location: /profile');
+            header('Location: ' . \Utils\Path::url('/profile'));
             exit;
         }
 
@@ -263,7 +263,7 @@ class AuthController {
         if ($updatePassword) {
             if (!$this->user->changePassword($current_password, $new_password)) {
                 $this->session->setFlash('error', 'Das aktuelle Passwort ist falsch.');
-                header('Location: /profile');
+                header('Location: ' . \Utils\Path::url('/profile'));
                 exit;
             }
         }
@@ -276,7 +276,7 @@ class AuthController {
         );
 
         $this->session->setFlash('success', 'Ihr Profil wurde erfolgreich aktualisiert.');
-        header('Location: /profile');
+        header('Location: ' . \Utils\Path::url('/profile'));
         exit;
     }
 } 

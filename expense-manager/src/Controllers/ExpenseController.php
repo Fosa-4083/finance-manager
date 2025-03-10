@@ -297,29 +297,29 @@ class ExpenseController {
             // Validierung
             if (empty($expense->category_id)) {
                 $_SESSION['error'] = 'Bitte wählen Sie eine Kategorie aus.';
-                header('Location: /expenses/create');
+                header('Location: ' . \Utils\Path::url('/expenses/create'));
                 exit;
             }
             
             if (empty($expense->date)) {
                 $_SESSION['error'] = 'Bitte geben Sie ein Datum ein.';
-                header('Location: /expenses/create');
+                header('Location: ' . \Utils\Path::url('/expenses/create'));
                 exit;
             }
             
             if (!is_numeric($value) || $value == 0) {
                 $_SESSION['error'] = 'Bitte geben Sie einen gültigen Betrag ein.';
-                header('Location: /expenses/create');
+                header('Location: ' . \Utils\Path::url('/expenses/create'));
                 exit;
             }
             
             if ($expense->save()) {
                 $_SESSION['success'] = 'Buchung erfolgreich gespeichert.';
-                header('Location: /expenses');
+                header('Location: ' . \Utils\Path::url('/expenses'));
                 exit;
             } else {
                 $_SESSION['error'] = 'Fehler beim Speichern der Buchung.';
-                header('Location: /expenses/create');
+                header('Location: ' . \Utils\Path::url('/expenses/create'));
                 exit;
             }
         }
@@ -330,7 +330,7 @@ class ExpenseController {
         
         if (!$id) {
             $_SESSION['error'] = 'Keine Ausgabe-ID angegeben.';
-            header('Location: /expenses');
+            header('Location: ' . \Utils\Path::url('/expenses'));
             exit;
         }
         
@@ -357,7 +357,7 @@ class ExpenseController {
             include VIEW_PATH . 'expenses/edit.php';
         } else {
             $_SESSION['error'] = 'Ausgabe nicht gefunden.';
-            header('Location: /expenses');
+            header('Location: ' . \Utils\Path::url('/expenses'));
             exit;
         }
     }
@@ -368,23 +368,21 @@ class ExpenseController {
             
             if (!$id) {
                 $_SESSION['error'] = 'Keine Ausgabe-ID angegeben.';
-                header('Location: /expenses');
+                header('Location: ' . \Utils\Path::url('/expenses'));
                 exit;
             }
             
             $expense = new Expense();
             if (!$expense->findById($id)) {
                 $_SESSION['error'] = 'Ausgabe nicht gefunden.';
-                header('Location: /expenses');
+                header('Location: ' . \Utils\Path::url('/expenses'));
                 exit;
             }
             
-            $expense->category_id = $_POST['category_id'] ?? $expense->category_id;
-            $expense->project_id = !empty($_POST['project_id']) ? $_POST['project_id'] : null;
-            $expense->date = $_POST['date'] ?? $expense->date;
-            $expense->description = $_POST['description'] ?? $expense->description;
-            
-            // Betrag und Typ verarbeiten
+            $expense->category_id = $_POST['category_id'] ?? null;
+            $expense->project_id = $_POST['project_id'] ?? null;
+            $expense->date = $_POST['date'] ?? null;
+            $expense->description = $_POST['description'] ?? '';
             $value = $_POST['value'] ?? 0;
             $type = $_POST['type'] ?? 'expense';
             
@@ -395,34 +393,34 @@ class ExpenseController {
                 $expense->value = abs($value);
             }
             
-            $expense->afa = isset($_POST['afa']) ? 1 : 0;  // Lohnsteuerausgleich-relevante Ausgabe
+            $expense->afa = isset($_POST['afa']) ? 1 : 0;
             
             // Validierung
             if (empty($expense->category_id)) {
                 $_SESSION['error'] = 'Bitte wählen Sie eine Kategorie aus.';
-                header('Location: /expenses/edit?id=' . $id);
+                header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
                 exit;
             }
             
             if (empty($expense->date)) {
                 $_SESSION['error'] = 'Bitte geben Sie ein Datum ein.';
-                header('Location: /expenses/edit?id=' . $id);
+                header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
                 exit;
             }
             
             if (!is_numeric($value) || $value == 0) {
                 $_SESSION['error'] = 'Bitte geben Sie einen gültigen Betrag ein.';
-                header('Location: /expenses/edit?id=' . $id);
+                header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
                 exit;
             }
             
-            if ($expense->save()) {
+            if ($expense->update()) {
                 $_SESSION['success'] = 'Buchung erfolgreich aktualisiert.';
-                header('Location: /expenses');
+                header('Location: ' . \Utils\Path::url('/expenses'));
                 exit;
             } else {
                 $_SESSION['error'] = 'Fehler beim Aktualisieren der Buchung.';
-                header('Location: /expenses/edit?id=' . $id);
+                header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
                 exit;
             }
         }
@@ -433,22 +431,22 @@ class ExpenseController {
         
         if (!$id) {
             $_SESSION['error'] = 'Keine Ausgabe-ID angegeben.';
-            header('Location: /expenses');
+            header('Location: ' . \Utils\Path::url('/expenses'));
             exit;
         }
         
-        try {
-            $stmt = $this->db->prepare('DELETE FROM expenses WHERE id = ?');
-            if ($stmt->execute([$id])) {
-                $_SESSION['success'] = 'Ausgabe erfolgreich gelöscht.';
+        $expense = new Expense();
+        if ($expense->findById($id)) {
+            if ($expense->delete()) {
+                $_SESSION['success'] = 'Buchung erfolgreich gelöscht.';
             } else {
-                $_SESSION['error'] = 'Fehler beim Löschen der Ausgabe.';
+                $_SESSION['error'] = 'Fehler beim Löschen der Buchung.';
             }
-        } catch (\PDOException $e) {
-            $_SESSION['error'] = 'Datenbankfehler: ' . $e->getMessage();
+        } else {
+            $_SESSION['error'] = 'Buchung nicht gefunden.';
         }
         
-        header('Location: /expenses');
+        header('Location: ' . \Utils\Path::url('/expenses'));
         exit;
     }
     
@@ -457,7 +455,7 @@ class ExpenseController {
      */
     public function bulkUpdate() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /expenses');
+            header('Location: ' . \Utils\Path::url('/expenses'));
             exit;
         }
         
@@ -467,13 +465,13 @@ class ExpenseController {
         // Validierung
         if (empty($project_id)) {
             $_SESSION['error'] = 'Bitte wählen Sie ein Projekt aus.';
-            header('Location: /expenses');
+            header('Location: ' . \Utils\Path::url('/expenses'));
             exit;
         }
         
         if (empty($expense_ids) || !is_array($expense_ids)) {
             $_SESSION['error'] = 'Bitte wählen Sie mindestens eine Buchung aus.';
-            header('Location: /expenses');
+            header('Location: ' . \Utils\Path::url('/expenses'));
             exit;
         }
         
@@ -482,7 +480,7 @@ class ExpenseController {
         $stmt->execute([$project_id]);
         if (!$stmt->fetch()) {
             $_SESSION['error'] = 'Das ausgewählte Projekt existiert nicht.';
-            header('Location: /expenses');
+            header('Location: ' . \Utils\Path::url('/expenses'));
             exit;
         }
         
@@ -517,7 +515,7 @@ class ExpenseController {
             $_SESSION['error'] = 'Datenbankfehler: ' . $e->getMessage();
         }
         
-        header('Location: /expenses');
+        header('Location: ' . \Utils\Path::url('/expenses'));
         exit;
     }
 
