@@ -1,0 +1,14 @@
+Options +FollowSymLinks
+RewriteEngine On
+
+# Erlaube Zugriff auf alle Dateien in diesem Verzeichnis
+Require all granted
+Allow from all
+
+# Wenn es sich um eine existierende Datei oder ein Verzeichnis handelt, direkt ausliefern
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Ansonsten zur index.php weiterleiten
+RewriteRule ^ index.php [QSA,L] 

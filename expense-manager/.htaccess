@@ -19,10 +19,4 @@ php_value error_reporting E_ALL
 <FilesMatch "^(.env|composer.json|composer.lock)$">
     Order allow,deny
     Deny from all
-</FilesMatch>
-
-# Erlaube Zugriff auf das public Verzeichnis
-<Directory "public">
-    Require all granted
-    Allow from all
-</Directory> 
+</FilesMatch> 
