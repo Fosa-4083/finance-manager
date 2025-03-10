@@ -1,0 +1,13 @@
+RewriteEngine On
+RewriteBase /
+
+# Wenn die Datei oder das Verzeichnis nicht existiert
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Leite alle Anfragen an index.php weiter
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# PHP Fehler anzeigen (nur für Entwicklung, in Produktion auskommentieren)
+php_flag display_errors on
+php_value error_reporting E_ALL 

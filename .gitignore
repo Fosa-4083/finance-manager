@@ -1,0 +1,67 @@
+# Environment Dateien
+.env
+.env.*
+!.env.example
+
+# Deployment Skripte
+deploy-*.php
+deploy-*.sh
+sftp_commands.txt
+
+# System Dateien
+.DS_Store
+Thumbs.db
+
+# IDE Dateien
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Temporäre Dateien
+*.log
+*.cache
+*.tmp
+temp_upload/
+
+# Datenbank
+*.sqlite
+*.sqlite3
+*.db
+
+# Composer
+/vendor/
+composer.phar
+
+# Sonstige
+*.zip
+*.tar
+*.gz
+
+# Sensible Dateien
+.env.local
+.env.*.local
+
+# Deployment-Konfiguration mit sensiblen Daten
+deploy-config.php
+
+# Composer-Abhängigkeiten
+composer.lock
+
+# Node.js-Abhängigkeiten
+/node_modules/
+package-lock.json
+yarn.lock
+
+# Kompilierte Dateien
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Backup-Dateien
+*~
+*.bak
+*.swp 
