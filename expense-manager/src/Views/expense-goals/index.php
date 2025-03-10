@@ -166,17 +166,19 @@
                                             </div>
                                         </td>
                                         <td class="text-end">
-                                            <a href="<?php echo \Utils\Path::url('/expense-goals/edit?id=<?= $goal['id'] ?>'); ?>" class="btn btn-primary btn-action" title="Bearbeiten">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <form action="<?php echo \Utils\Path::url('/expense-goals/delete'); ?>" method="POST" class="d-inline">
-                                                <input type="hidden" name="id" value="<?= $goal['id'] ?>">
-                                                <button type="submit" class="btn btn-danger btn-action" 
-                                                        onclick="return confirm('Sind Sie sicher, dass Sie dieses Ausgabenziel löschen möchten?')"
-                                                        title="Löschen">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
+                                            <div class="btn-group">
+                                                <a href="<?php echo \Utils\Path::url('/expense-goals/edit?id=' . $goal['id']); ?>" class="btn btn-primary btn-action" title="Bearbeiten">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <form action="<?php echo \Utils\Path::url('/expense-goals/delete'); ?>" method="POST" class="d-inline">
+                                                    <input type="hidden" name="id" value="<?= $goal['id'] ?>">
+                                                    <button type="submit" class="btn btn-danger btn-action" 
+                                                            onclick="return confirm('Sind Sie sicher, dass Sie dieses Ausgabenziel löschen möchten?')"
+                                                            title="Löschen">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>

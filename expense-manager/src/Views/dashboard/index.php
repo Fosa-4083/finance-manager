@@ -315,7 +315,7 @@
                                     </p>
                                 <?php endif; ?>
                                 <div class="mt-2">
-                                    <a href="<?php echo \Utils\Path::url('/projects/show?id=<?= $project['id']; ?>'); ?>" class="btn btn-sm btn-primary">
+                                    <a href="<?php echo \Utils\Path::url('/projects/show?id=' . $project['id']); ?>" class="btn btn-sm btn-primary">
                                         <i class="bi bi-eye"></i> Details
                                     </a>
                                 </div>

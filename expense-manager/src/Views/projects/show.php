@@ -14,11 +14,11 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><?= htmlspecialchars($project->name); ?></h1>
             <div>
-                <a href="<?php echo \Utils\Path::url('/projects/edit?id=<?= $project->id; ?>'); ?>" class="btn btn-warning">
-                    <i class="bi bi-pencil"></i> Bearbeiten
+                <a href="<?php echo \Utils\Path::url('/projects/edit?id=' . $project->id); ?>" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Projekt bearbeiten
                 </a>
                 <a href="<?php echo \Utils\Path::url('/projects'); ?>" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Zurück
+                    <i class="bi bi-arrow-left"></i> Zurück zur Übersicht
                 </a>
             </div>
         </div>
@@ -116,10 +116,12 @@
                         <a href="<?php echo \Utils\Path::url('/expenses/create'); ?>" class="btn btn-primary mb-2 w-100">
                             <i class="bi bi-plus-circle"></i> Neue Ausgabe hinzufügen
                         </a>
-                        <a href="<?php echo \Utils\Path::url('/projects/delete?id=<?= $project->id; ?>'); ?>" class="btn btn-danger w-100" 
-                           onclick="return confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten?');">
-                            <i class="bi bi-trash"></i> Projekt löschen
-                        </a>
+                        <div class="mb-3">
+                            <a href="<?php echo \Utils\Path::url('/projects/delete?id=' . $project->id); ?>" class="btn btn-danger w-100"
+                               onclick="return confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten? Alle zugehörigen Ausgaben werden ebenfalls gelöscht.')">
+                                <i class="bi bi-trash"></i> Projekt löschen
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -161,11 +163,11 @@
                                                     <?= number_format($expense['value'], 2, ',', '.'); ?> €
                                                 </td>
                                                 <td>
-                                                    <a href="<?php echo \Utils\Path::url('/expenses/edit?id=<?= $expense['id']; ?>'); ?>" class="btn btn-sm btn-warning">
+                                                    <a href="<?php echo \Utils\Path::url('/expenses/edit?id=' . $expense['id']); ?>" class="btn btn-sm btn-warning">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
-                                                    <a href="<?php echo \Utils\Path::url('/expenses/delete?id=<?= $expense['id']; ?>'); ?>" class="btn btn-sm btn-danger"
-                                                       onclick="return confirm('Sind Sie sicher, dass Sie diese Ausgabe löschen möchten?');">
+                                                    <a href="<?php echo \Utils\Path::url('/expenses/delete?id=' . $expense['id']); ?>" class="btn btn-sm btn-danger"
+                                                       onclick="return confirm('Sind Sie sicher, dass Sie diese Ausgabe löschen möchten?')">
                                                         <i class="bi bi-trash"></i>
                                                     </a>
                                                 </td>

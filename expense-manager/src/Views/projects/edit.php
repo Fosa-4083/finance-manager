@@ -25,7 +25,7 @@
                             </div>
                         <?php endif; ?>
 
-                        <form action="<?php echo \Utils\Path::url('/projects/update?id=<?= $project->id; ?>'); ?>" method="post">
+                        <form action="<?php echo \Utils\Path::url('/projects/update?id=' . $project->id); ?>" method="post">
                             <input type="hidden" name="id" value="<?= $project->id; ?>">
                             
                             <div class="mb-3">

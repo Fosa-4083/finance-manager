@@ -305,10 +305,10 @@
                                             <?= number_format(abs($expense['value']), 2, ',', '.'); ?> €
                                         </td>
                                         <td>
-                                            <a href="<?php echo \Utils\Path::url('/expenses/edit?id=<?= $expense['id']; ?>'); ?>" class="btn btn-sm btn-outline-primary">
+                                            <a href="<?php echo \Utils\Path::url('/expenses/edit?id=' . $expense['id']); ?>" class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="<?php echo \Utils\Path::url('/expenses/delete?id=<?= $expense['id']; ?>'); ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Wirklich löschen?')">
+                                            <a href="<?php echo \Utils\Path::url('/expenses/delete?id=' . $expense['id']); ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Wirklich löschen?')">
                                                 <i class="bi bi-trash"></i>
                                             </a>
                                         </td>
