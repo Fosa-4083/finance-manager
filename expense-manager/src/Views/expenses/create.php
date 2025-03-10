@@ -52,7 +52,7 @@
                             </div>
                         <?php endif; ?>
 
-                        <form action="/expenses/store" method="POST">
+                        <form action="<?php echo \Utils\Path::url('/expenses/store'); ?>" method="POST">
                             <div class="mb-3">
                                 <label for="date" class="form-label">Datum</label>
                                 <input type="date" class="form-control" id="date" name="date" 
@@ -117,7 +117,7 @@
                             </div>
                             
                             <div class="d-flex justify-content-between">
-                                <a href="/expenses" class="btn btn-secondary">Abbrechen</a>
+                                <a href="<?php echo \Utils\Path::url('/expenses'); ?>" class="btn btn-secondary">Abbrechen</a>
                                 <button type="submit" class="btn btn-primary">Speichern</button>
                             </div>
                         </form>

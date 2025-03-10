@@ -18,7 +18,7 @@
                         <h2>Neue Kategorie erstellen</h2>
                     </div>
                     <div class="card-body">
-                        <form action="/categories/store" method="POST">
+                        <form action="<?php echo \Utils\Path::url('/categories/store'); ?>" method="POST">
                             <div class="mb-3">
                                 <label for="name" class="form-label">Name</label>
                                 <input type="text" class="form-control" id="name" name="name" required>
@@ -42,7 +42,7 @@
                             </div>
                             
                             <div class="d-flex justify-content-between">
-                                <a href="/categories" class="btn btn-secondary">Zurück</a>
+                                <a href="<?php echo \Utils\Path::url('/categories'); ?>" class="btn btn-secondary">Zurück</a>
                                 <button type="submit" class="btn btn-primary">Kategorie erstellen</button>
                             </div>
                         </form>

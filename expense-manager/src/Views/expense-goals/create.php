@@ -17,7 +17,7 @@
                         <h2>Neues Ausgabenziel erstellen</h2>
                     </div>
                     <div class="card-body">
-                        <form action="/expense-goals/store" method="POST">
+                        <form action="<?php echo \Utils\Path::url('/expense-goals/store'); ?>" method="POST">
                             <div class="mb-3">
                                 <label for="category_id" class="form-label">Kategorie</label>
                                 <select class="form-select" id="category_id" name="category_id" required>
@@ -51,7 +51,7 @@
                             </div>
                             
                             <div class="d-flex justify-content-between">
-                                <a href="/expense-goals" class="btn btn-secondary">Zurück</a>
+                                <a href="<?php echo \Utils\Path::url('/expense-goals'); ?>" class="btn btn-secondary">Zurück</a>
                                 <button type="submit" class="btn btn-primary">Ausgabenziel erstellen</button>
                             </div>
                         </form>

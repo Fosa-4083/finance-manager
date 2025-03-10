@@ -21,7 +21,7 @@ $flash = $session->getAllFlash();
                         <?php endforeach; ?>
                     <?php endif; ?>
 
-                    <form action="/login/process" method="post">
+                    <form action="<?php echo \Utils\Path::url('/login/process'); ?>" method="post">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                         
                         <div class="mb-3">
@@ -40,7 +40,7 @@ $flash = $session->getAllFlash();
                     </form>
                 </div>
                 <div class="card-footer text-center">
-                    <p class="mb-0">Noch kein Konto? <a href="/register">Registrieren</a></p>
+                    <p class="mb-0">Noch kein Konto? <a href="<?php echo \Utils\Path::url('/register'); ?>">Registrieren</a></p>
                 </div>
             </div>
         </div>

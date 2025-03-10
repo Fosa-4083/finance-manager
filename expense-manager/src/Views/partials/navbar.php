@@ -5,7 +5,7 @@ $user = $session->getUser();
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="/">Finanzverwaltung</a>
+        <a class="navbar-brand" href="<?php echo \Utils\Path::url('/'); ?>">Finanzverwaltung</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -13,27 +13,27 @@ $user = $session->getUser();
             <?php if ($session->isLoggedIn()): ?>
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link <?php echo $_SERVER['REQUEST_URI'] === '/' ? 'active' : ''; ?>" href="/">
+                        <a class="nav-link <?php echo $_SERVER['REQUEST_URI'] === '/' ? 'active' : ''; ?>" href="<?php echo \Utils\Path::url('/'); ?>">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], '/expenses') === 0 ? 'active' : ''; ?>" href="/expenses">
+                        <a class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], '/expenses') === 0 ? 'active' : ''; ?>" href="<?php echo \Utils\Path::url('/expenses'); ?>">
                             <i class="bi bi-cash-coin"></i> Ein- & Ausgaben
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], '/expense-goals') === 0 ? 'active' : ''; ?>" href="/expense-goals">
+                        <a class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], '/expense-goals') === 0 ? 'active' : ''; ?>" href="<?php echo \Utils\Path::url('/expense-goals'); ?>">
                             <i class="bi bi-bullseye"></i> Ziele
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], '/projects') === 0 ? 'active' : ''; ?>" href="/projects">
+                        <a class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], '/projects') === 0 ? 'active' : ''; ?>" href="<?php echo \Utils\Path::url('/projects'); ?>">
                             <i class="bi bi-folder"></i> Projekte
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], '/categories') === 0 ? 'active' : ''; ?>" href="/categories">
+                        <a class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], '/categories') === 0 ? 'active' : ''; ?>" href="<?php echo \Utils\Path::url('/categories'); ?>">
                             <i class="bi bi-tags"></i> Kategorien
                         </a>
                     </li>
@@ -44,21 +44,21 @@ $user = $session->getUser();
                             <i class="bi bi-person-circle"></i> <?php echo htmlspecialchars($user['name']); ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="/profile"><i class="bi bi-person"></i> Profil</a></li>
+                            <li><a class="dropdown-item" href="<?php echo \Utils\Path::url('/profile'); ?>"><i class="bi bi-person"></i> Profil</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Abmelden</a></li>
+                            <li><a class="dropdown-item" href="<?php echo \Utils\Path::url('/logout'); ?>"><i class="bi bi-box-arrow-right"></i> Abmelden</a></li>
                         </ul>
                     </li>
                 </ul>
             <?php else: ?>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link <?php echo $_SERVER['REQUEST_URI'] === '/login' ? 'active' : ''; ?>" href="/login">
+                        <a class="nav-link <?php echo $_SERVER['REQUEST_URI'] === '/login' ? 'active' : ''; ?>" href="<?php echo \Utils\Path::url('/login'); ?>">
                             <i class="bi bi-box-arrow-in-right"></i> Anmelden
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo $_SERVER['REQUEST_URI'] === '/register' ? 'active' : ''; ?>" href="/register">
+                        <a class="nav-link <?php echo $_SERVER['REQUEST_URI'] === '/register' ? 'active' : ''; ?>" href="<?php echo \Utils\Path::url('/register'); ?>">
                             <i class="bi bi-person-plus"></i> Registrieren
                         </a>
                     </li>

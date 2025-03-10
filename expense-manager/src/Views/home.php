@@ -9,20 +9,20 @@
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
         <div class="container">
-            <a class="navbar-brand" href="/">Ausgabenverwaltung</a>
+            <a class="navbar-brand" href="<?php echo \Utils\Path::url('/'); ?>">Ausgabenverwaltung</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="/categories">Kategorien</a>
+                        <a class="nav-link" href="<?php echo \Utils\Path::url('/categories'); ?>">Kategorien</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/expenses">Ausgaben</a>
+                        <a class="nav-link" href="<?php echo \Utils\Path::url('/expenses'); ?>">Ausgaben</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/expense-goals">Ausgabenziele</a>
+                        <a class="nav-link" href="<?php echo \Utils\Path::url('/expense-goals'); ?>">Ausgabenziele</a>
                     </li>
                 </ul>
             </div>
@@ -43,7 +43,7 @@
                                     <div class="card-body">
                                         <h5 class="card-title">Kategorien</h5>
                                         <p class="card-text">Verwalten Sie Ihre Ausgabenkategorien</p>
-                                        <a href="/categories" class="btn btn-primary">Zu den Kategorien</a>
+                                        <a href="<?php echo \Utils\Path::url('/categories'); ?>" class="btn btn-primary">Zu den Kategorien</a>
                                     </div>
                                 </div>
                             </div>
@@ -52,7 +52,7 @@
                                     <div class="card-body">
                                         <h5 class="card-title">Ausgaben</h5>
                                         <p class="card-text">Erfassen und verwalten Sie Ihre Ausgaben</p>
-                                        <a href="/expenses" class="btn btn-primary">Zu den Ausgaben</a>
+                                        <a href="<?php echo \Utils\Path::url('/expenses'); ?>" class="btn btn-primary">Zu den Ausgaben</a>
                                     </div>
                                 </div>
                             </div>
@@ -61,7 +61,7 @@
                                     <div class="card-body">
                                         <h5 class="card-title">Ausgabenziele</h5>
                                         <p class="card-text">Setzen und verfolgen Sie Ihre Ziele</p>
-                                        <a href="/expense-goals" class="btn btn-primary">Zu den Zielen</a>
+                                        <a href="<?php echo \Utils\Path::url('/expense-goals'); ?>" class="btn btn-primary">Zu den Zielen</a>
                                     </div>
                                 </div>
                             </div>

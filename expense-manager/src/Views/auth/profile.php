@@ -17,7 +17,7 @@
                         <?php endforeach; ?>
                     <?php endif; ?>
 
-                    <form action="/profile" method="post">
+                    <form action="<?php echo \Utils\Path::url('/profile'); ?>" method="post">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                         
                         <div class="mb-3">

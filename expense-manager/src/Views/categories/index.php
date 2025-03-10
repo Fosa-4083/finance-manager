@@ -47,7 +47,7 @@
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="h2 mb-0">Kategorien</h1>
-                <a href="/categories/create" class="btn btn-primary">
+                <a href="<?php echo \Utils\Path::url('/categories/create'); ?>" class="btn btn-primary">
                     <i class="bi bi-plus-lg me-1"></i>Neue Kategorie
                 </a>
             </div>
@@ -118,10 +118,10 @@
                                             <div class="color-preview" style="background-color: <?= htmlspecialchars($category['color']) ?>"></div>
                                         </td>
                                         <td class="text-end">
-                                            <a href="/categories/edit?id=<?= $category['id'] ?>" class="btn btn-primary btn-action" title="Bearbeiten">
+                                            <a href="<?php echo \Utils\Path::url('/categories/edit?id=<?= $category['id'] ?>'); ?>" class="btn btn-primary btn-action" title="Bearbeiten">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="/categories/delete?id=<?= $category['id'] ?>" 
+                                            <a href="<?php echo \Utils\Path::url('/categories/delete?id=<?= $category['id'] ?>'); ?>" 
                                                class="btn btn-danger btn-action" 
                                                onclick="return confirm('Sind Sie sicher, dass Sie diese Kategorie löschen möchten?')"
                                                title="Löschen">
@@ -173,10 +173,10 @@
                                             <div class="color-preview" style="background-color: <?= htmlspecialchars($category['color']) ?>"></div>
                                         </td>
                                         <td class="text-end">
-                                            <a href="/categories/edit?id=<?= $category['id'] ?>" class="btn btn-primary btn-action" title="Bearbeiten">
+                                            <a href="<?php echo \Utils\Path::url('/categories/edit?id=<?= $category['id'] ?>'); ?>" class="btn btn-primary btn-action" title="Bearbeiten">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="/categories/delete?id=<?= $category['id'] ?>" 
+                                            <a href="<?php echo \Utils\Path::url('/categories/delete?id=<?= $category['id'] ?>'); ?>" 
                                                class="btn btn-danger btn-action" 
                                                onclick="return confirm('Sind Sie sicher, dass Sie diese Kategorie löschen möchten?')"
                                                title="Löschen">

@@ -54,7 +54,7 @@
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Ausgaben & Einnahmen</h1>
-            <a href="/expenses/create" class="btn btn-primary">
+            <a href="<?php echo \Utils\Path::url('/expenses/create'); ?>" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Neue Buchung
             </a>
         </div>
@@ -242,7 +242,7 @@
                     </div>
                 <?php else: ?>
                     <!-- Massenbearbeitung -->
-                    <form id="bulk-edit-form" action="/expenses/bulk-update" method="POST">
+                    <form id="bulk-edit-form" action="<?php echo \Utils\Path::url('/expenses/bulk-update'); ?>" method="POST">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <select id="bulk-project" name="project_id" class="form-select">
@@ -305,10 +305,10 @@
                                             <?= number_format(abs($expense['value']), 2, ',', '.'); ?> €
                                         </td>
                                         <td>
-                                            <a href="/expenses/edit?id=<?= $expense['id']; ?>" class="btn btn-sm btn-outline-primary">
+                                            <a href="<?php echo \Utils\Path::url('/expenses/edit?id=<?= $expense['id']; ?>'); ?>" class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="/expenses/delete?id=<?= $expense['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Wirklich löschen?')">
+                                            <a href="<?php echo \Utils\Path::url('/expenses/delete?id=<?= $expense['id']; ?>'); ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Wirklich löschen?')">
                                                 <i class="bi bi-trash"></i>
                                             </a>
                                         </td>

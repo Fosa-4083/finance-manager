@@ -17,7 +17,7 @@
                         <?php endforeach; ?>
                     <?php endif; ?>
 
-                    <form action="/register" method="post">
+                    <form action="<?php echo \Utils\Path::url('/register'); ?>" method="post">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                         
                         <div class="mb-3">
@@ -47,7 +47,7 @@
                     </form>
                 </div>
                 <div class="card-footer text-center">
-                    <p class="mb-0">Bereits registriert? <a href="/login">Anmelden</a></p>
+                    <p class="mb-0">Bereits registriert? <a href="<?php echo \Utils\Path::url('/login'); ?>">Anmelden</a></p>
                 </div>
             </div>
         </div>

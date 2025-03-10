@@ -15,7 +15,7 @@
                 <h1 class="display-1">404</h1>
                 <h2>Seite nicht gefunden</h2>
                 <p class="lead">Die angeforderte Seite konnte leider nicht gefunden werden.</p>
-                <a href="/" class="btn btn-primary">Zur Startseite</a>
+                <a href="<?php echo \Utils\Path::url('/'); ?>" class="btn btn-primary">Zur Startseite</a>
             </div>
         </div>
     </div>

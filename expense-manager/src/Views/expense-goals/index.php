@@ -67,7 +67,7 @@
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="h2 mb-0">Ausgabenziele</h1>
-                <a href="/expense-goals/create" class="btn btn-primary">
+                <a href="<?php echo \Utils\Path::url('/expense-goals/create'); ?>" class="btn btn-primary">
                     <i class="bi bi-plus-lg me-1"></i>Neues Ausgabenziel
                 </a>
             </div>
@@ -97,7 +97,7 @@
                     </div>
                     <?php if ($selectedYear): ?>
                     <div class="col-md-2">
-                        <a href="/expense-goals" class="btn btn-outline-secondary w-100">
+                        <a href="<?php echo \Utils\Path::url('/expense-goals'); ?>" class="btn btn-outline-secondary w-100">
                             <i class="bi bi-x-circle me-1"></i>Filter zurücksetzen
                         </a>
                     </div>
@@ -166,10 +166,10 @@
                                             </div>
                                         </td>
                                         <td class="text-end">
-                                            <a href="/expense-goals/edit?id=<?= $goal['id'] ?>" class="btn btn-primary btn-action" title="Bearbeiten">
+                                            <a href="<?php echo \Utils\Path::url('/expense-goals/edit?id=<?= $goal['id'] ?>'); ?>" class="btn btn-primary btn-action" title="Bearbeiten">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <form action="/expense-goals/delete" method="POST" class="d-inline">
+                                            <form action="<?php echo \Utils\Path::url('/expense-goals/delete'); ?>" method="POST" class="d-inline">
                                                 <input type="hidden" name="id" value="<?= $goal['id'] ?>">
                                                 <button type="submit" class="btn btn-danger btn-action" 
                                                         onclick="return confirm('Sind Sie sicher, dass Sie dieses Ausgabenziel löschen möchten?')"

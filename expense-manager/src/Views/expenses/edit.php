@@ -25,7 +25,7 @@
                             </div>
                         <?php endif; ?>
 
-                        <form action="/expenses/update" method="POST">
+                        <form action="<?php echo \Utils\Path::url('/expenses/update'); ?>" method="POST">
                             <input type="hidden" name="id" value="<?= $expense['id']; ?>">
                             
                             <div class="mb-3">
@@ -93,7 +93,7 @@
                             </div>
                             
                             <div class="d-flex justify-content-between">
-                                <a href="/expenses" class="btn btn-secondary">Abbrechen</a>
+                                <a href="<?php echo \Utils\Path::url('/expenses'); ?>" class="btn btn-secondary">Abbrechen</a>
                                 <button type="submit" class="btn btn-primary">Änderungen speichern</button>
                             </div>
                         </form>

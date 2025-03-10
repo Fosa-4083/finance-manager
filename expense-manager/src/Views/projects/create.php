@@ -25,7 +25,7 @@
                             </div>
                         <?php endif; ?>
 
-                        <form action="/projects/store" method="post">
+                        <form action="<?php echo \Utils\Path::url('/projects/store'); ?>" method="post">
                             <div class="mb-3">
                                 <label for="name" class="form-label">Projektname *</label>
                                 <input type="text" class="form-control" id="name" name="name" required>
@@ -63,7 +63,7 @@
                             </div>
 
                             <div class="d-flex justify-content-between">
-                                <a href="/projects" class="btn btn-secondary">Abbrechen</a>
+                                <a href="<?php echo \Utils\Path::url('/projects'); ?>" class="btn btn-secondary">Abbrechen</a>
                                 <button type="submit" class="btn btn-primary">Projekt erstellen</button>
                             </div>
                         </form>

@@ -14,10 +14,10 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><?= htmlspecialchars($project->name); ?></h1>
             <div>
-                <a href="/projects/edit?id=<?= $project->id; ?>" class="btn btn-warning">
+                <a href="<?php echo \Utils\Path::url('/projects/edit?id=<?= $project->id; ?>'); ?>" class="btn btn-warning">
                     <i class="bi bi-pencil"></i> Bearbeiten
                 </a>
-                <a href="/projects" class="btn btn-secondary">
+                <a href="<?php echo \Utils\Path::url('/projects'); ?>" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Zurück
                 </a>
             </div>
@@ -113,10 +113,10 @@
                         <h5>Aktionen</h5>
                     </div>
                     <div class="card-body">
-                        <a href="/expenses/create" class="btn btn-primary mb-2 w-100">
+                        <a href="<?php echo \Utils\Path::url('/expenses/create'); ?>" class="btn btn-primary mb-2 w-100">
                             <i class="bi bi-plus-circle"></i> Neue Ausgabe hinzufügen
                         </a>
-                        <a href="/projects/delete?id=<?= $project->id; ?>" class="btn btn-danger w-100" 
+                        <a href="<?php echo \Utils\Path::url('/projects/delete?id=<?= $project->id; ?>'); ?>" class="btn btn-danger w-100" 
                            onclick="return confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten?');">
                             <i class="bi bi-trash"></i> Projekt löschen
                         </a>
@@ -161,10 +161,10 @@
                                                     <?= number_format($expense['value'], 2, ',', '.'); ?> €
                                                 </td>
                                                 <td>
-                                                    <a href="/expenses/edit?id=<?= $expense['id']; ?>" class="btn btn-sm btn-warning">
+                                                    <a href="<?php echo \Utils\Path::url('/expenses/edit?id=<?= $expense['id']; ?>'); ?>" class="btn btn-sm btn-warning">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
-                                                    <a href="/expenses/delete?id=<?= $expense['id']; ?>" class="btn btn-sm btn-danger"
+                                                    <a href="<?php echo \Utils\Path::url('/expenses/delete?id=<?= $expense['id']; ?>'); ?>" class="btn btn-sm btn-danger"
                                                        onclick="return confirm('Sind Sie sicher, dass Sie diese Ausgabe löschen möchten?');">
                                                         <i class="bi bi-trash"></i>
                                                     </a>

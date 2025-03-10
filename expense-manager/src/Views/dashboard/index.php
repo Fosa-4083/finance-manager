@@ -14,7 +14,7 @@
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Dashboard</h1>
-            <a href="/expenses/create" class="btn btn-primary">
+            <a href="<?php echo \Utils\Path::url('/expenses/create'); ?>" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Neue Buchung
             </a>
         </div>
@@ -23,7 +23,7 @@
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Schnellbuchung</h5>
-                <form action="/expenses/store" method="post" class="row g-3">
+                <form action="<?php echo \Utils\Path::url('/expenses/store'); ?>" method="post" class="row g-3">
                     <div class="col-md-2">
                         <label for="quick_date" class="form-label">Datum</label>
                         <input type="date" class="form-control" id="quick_date" name="date" value="<?= date('Y-m-d'); ?>" required>
@@ -315,7 +315,7 @@
                                     </p>
                                 <?php endif; ?>
                                 <div class="mt-2">
-                                    <a href="/projects/show?id=<?= $project['id']; ?>" class="btn btn-sm btn-primary">
+                                    <a href="<?php echo \Utils\Path::url('/projects/show?id=<?= $project['id']; ?>'); ?>" class="btn btn-sm btn-primary">
                                         <i class="bi bi-eye"></i> Details
                                     </a>
                                 </div>
@@ -366,7 +366,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const categorySelect = document.getElementById('quick_category');
             const valueInput = document.getElementById('quick_value');
-            const quickForm = document.querySelector('form[action="/expenses/store"]');
+            const quickForm = document.querySelector('form[action="<?php echo \Utils\Path::url('/expenses/store'); ?>"]');
 
             // Funktion zum Setzen des Vorzeichens basierend auf der Kategorie
             function updateValueSign() {

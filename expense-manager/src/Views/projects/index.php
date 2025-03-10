@@ -13,7 +13,7 @@
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Projekte</h1>
-            <a href="/projects/create" class="btn btn-primary">
+            <a href="<?php echo \Utils\Path::url('/projects/create'); ?>" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Neues Projekt
             </a>
         </div>
@@ -95,14 +95,14 @@
                                 <?php endif; ?>
                             </div>
                             <div class="card-footer d-flex justify-content-between">
-                                <a href="/projects/show?id=<?= $project['id']; ?>" class="btn btn-sm btn-info">
+                                <a href="<?php echo \Utils\Path::url('/projects/show?id=<?= $project['id']; ?>'); ?>" class="btn btn-sm btn-info">
                                     <i class="bi bi-eye"></i> Details
                                 </a>
                                 <div>
-                                    <a href="/projects/edit?id=<?= $project['id']; ?>" class="btn btn-sm btn-warning">
+                                    <a href="<?php echo \Utils\Path::url('/projects/edit?id=<?= $project['id']; ?>'); ?>" class="btn btn-sm btn-warning">
                                         <i class="bi bi-pencil"></i> Bearbeiten
                                     </a>
-                                    <a href="/projects/delete?id=<?= $project['id']; ?>" class="btn btn-sm btn-danger" 
+                                    <a href="<?php echo \Utils\Path::url('/projects/delete?id=<?= $project['id']; ?>'); ?>" class="btn btn-sm btn-danger" 
                                        onclick="return confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten?');">
                                         <i class="bi bi-trash"></i> Löschen
                                     </a>

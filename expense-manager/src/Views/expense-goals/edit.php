@@ -17,7 +17,7 @@
                         <h2>Ausgabenziel bearbeiten</h2>
                     </div>
                     <div class="card-body">
-                        <form action="/expense-goals/update" method="POST">
+                        <form action="<?php echo \Utils\Path::url('/expense-goals/update'); ?>" method="POST">
                             <input type="hidden" name="id" value="<?php echo $expenseGoal['id']; ?>">
                             
                             <div class="mb-3">
@@ -55,7 +55,7 @@
                             </div>
                             
                             <div class="d-flex justify-content-between">
-                                <a href="/expense-goals" class="btn btn-secondary">Zurück</a>
+                                <a href="<?php echo \Utils\Path::url('/expense-goals'); ?>" class="btn btn-secondary">Zurück</a>
                                 <button type="submit" class="btn btn-primary">Änderungen speichern</button>
                             </div>
                         </form>

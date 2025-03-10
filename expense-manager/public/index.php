@@ -17,6 +17,7 @@ require_once __DIR__ . '/../src/Controllers/DashboardController.php';
 require_once __DIR__ . '/../src/Controllers/ProjectController.php';
 require_once __DIR__ . '/../src/Controllers/AuthController.php';
 require_once __DIR__ . '/../src/Utils/Session.php';
+require_once __DIR__ . '/../src/Utils/Path.php';
 
 use Controllers\CategoryController;
 use Controllers\ExpenseController;
@@ -25,6 +26,7 @@ use Controllers\DashboardController;
 use Controllers\ProjectController;
 use Controllers\AuthController;
 use Utils\Session;
+use Utils\Path;
 
 // Session starten
 Session::start();
@@ -48,6 +50,7 @@ if (preg_match('/^(\/[^\/]+)\//', $requestUri, $matches)) {
     $basePath = $matches[1];
 }
 $router->setBasePath($basePath);
+Path::setBasePath($basePath);
 
 // Authentifizierungs-Routen (nur für Gäste)
 $router->addRoute('/login', 'Controllers\AuthController', 'showLoginForm', false, true);

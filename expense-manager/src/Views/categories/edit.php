@@ -18,7 +18,7 @@
                         <h2>Kategorie bearbeiten</h2>
                     </div>
                     <div class="card-body">
-                        <form action="/categories/update" method="POST">
+                        <form action="<?php echo \Utils\Path::url('/categories/update'); ?>" method="POST">
                             <input type="hidden" name="id" value="<?= htmlspecialchars($category['id']) ?>">
                             
                             <div class="mb-3">
@@ -46,7 +46,7 @@
                             </div>
                             
                             <div class="d-flex justify-content-between">
-                                <a href="/categories" class="btn btn-secondary">Zurück</a>
+                                <a href="<?php echo \Utils\Path::url('/categories'); ?>" class="btn btn-secondary">Zurück</a>
                                 <button type="submit" class="btn btn-primary">Änderungen speichern</button>
                             </div>
                         </form>
