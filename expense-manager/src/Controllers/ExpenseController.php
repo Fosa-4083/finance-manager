@@ -530,8 +530,10 @@ class ExpenseController {
 
         switch ($field) {
             case 'description':
-                $sql = 'SELECT DISTINCT description, value, category_id 
-                       FROM expenses 
+                // Verbesserte Abfrage für Beschreibungsvorschläge mit mehr Kontext
+                $sql = 'SELECT DISTINCT description, value, category_id, project_id, 
+                        (SELECT COUNT(*) FROM expenses e2 WHERE e2.description = e.description) as count
+                       FROM expenses e
                        WHERE description LIKE :query';
                 if ($category_id) {
                     $sql .= ' AND category_id = :category_id';
@@ -541,30 +543,40 @@ class ExpenseController {
                     $sql .= ' AND project_id = :project_id';
                     $params[':project_id'] = $project_id;
                 }
-                $sql .= ' ORDER BY date DESC LIMIT 5';
+                $sql .= ' ORDER BY count DESC, date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
                 $params[':query'] = '%' . $query . '%';
                 break;
 
             case 'value':
-                $sql = 'SELECT DISTINCT ABS(value) as value, description 
-                       FROM expenses 
+                // Verbesserte Abfrage für Betragsvorschläge mit Beschreibung und Häufigkeit
+                $sql = 'SELECT DISTINCT ABS(value) as value, description, 
+                        (SELECT COUNT(*) FROM expenses e2 WHERE ABS(e2.value) = ABS(e.value) AND e2.category_id = e.category_id) as count
+                       FROM expenses e
                        WHERE category_id = :category_id';
                 if ($project_id) {
                     $sql .= ' AND project_id = :project_id';
                     $params[':project_id'] = $project_id;
                 }
-                $sql .= ' ORDER BY date DESC LIMIT 5';
+                $sql .= ' ORDER BY count DESC, date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
                 $params[':category_id'] = $category_id;
                 break;
         }
 
         if ($sql) {
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($params);
-            $suggestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+            try {
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute($params);
+                $suggestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                header('Content-Type: application/json');
+                echo json_encode($suggestions);
+            } catch (\PDOException $e) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Datenbankfehler: ' . $e->getMessage()]);
+            }
+        } else {
             header('Content-Type: application/json');
-            echo json_encode($suggestions);
+            echo json_encode([]);
         }
     }
 } 

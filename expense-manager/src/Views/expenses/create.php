@@ -3,32 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neue Buchung - Finanzverwaltung</title>
+    <title>Neue Ausgabe - Ausgabenverwaltung</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .suggestions-container {
+            display: none;
             position: absolute;
             width: 100%;
             max-height: 200px;
             overflow-y: auto;
-            background: white;
+            background-color: #fff;
             border: 1px solid #ddd;
             border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             z-index: 1000;
-            display: none;
         }
+        
         .suggestion-item {
             padding: 8px 12px;
             cursor: pointer;
             border-bottom: 1px solid #eee;
         }
-        .suggestion-item:hover {
-            background-color: #f8f9fa;
+        
+        .suggestion-item:hover, .suggestion-item:focus {
+            background-color: #f0f7ff;
         }
+        
         .suggestion-item:last-child {
             border-bottom: none;
         }
+        
         .form-group {
             position: relative;
         }
@@ -138,6 +143,8 @@
             const valueSuggestions = document.getElementById('valueSuggestions');
 
             let debounceTimer;
+            let currentSuggestionIndex = -1;
+            let currentSuggestions = [];
 
             // Funktion für Beschreibungsvorschläge
             function fetchDescriptionSuggestions() {
@@ -150,21 +157,28 @@
                 const categoryId = categorySelect.value;
                 const projectId = projectSelect.value;
 
-                fetch(`/expenses/suggestions?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`)
+                fetch(`<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`)
                     .then(response => response.json())
                     .then(data => {
+                        currentSuggestions = data;
+                        currentSuggestionIndex = -1;
+                        
                         descriptionSuggestions.innerHTML = '';
                         if (data.length > 0) {
-                            data.forEach(item => {
+                            data.forEach((item, index) => {
                                 const div = document.createElement('div');
                                 div.className = 'suggestion-item';
-                                div.textContent = item.description;
+                                div.dataset.index = index;
+                                
+                                // Anzahl der Verwendungen anzeigen
+                                if (item.count && item.count > 1) {
+                                    div.innerHTML = `${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                                } else {
+                                    div.textContent = item.description;
+                                }
+                                
                                 div.addEventListener('click', () => {
-                                    descriptionInput.value = item.description;
-                                    if (item.value) {
-                                        valueInput.value = Math.abs(item.value);
-                                    }
-                                    descriptionSuggestions.style.display = 'none';
+                                    applyDescriptionSuggestion(item);
                                 });
                                 descriptionSuggestions.appendChild(div);
                             });
@@ -173,6 +187,28 @@
                             descriptionSuggestions.style.display = 'none';
                         }
                     });
+            }
+
+            // Funktion zum Anwenden eines Beschreibungsvorschlags
+            function applyDescriptionSuggestion(item) {
+                descriptionInput.value = item.description;
+                
+                // Betrag übernehmen, wenn vorhanden
+                if (item.value) {
+                    valueInput.value = Math.abs(item.value);
+                }
+                
+                // Kategorie auswählen, wenn vorhanden und keine ausgewählt ist
+                if (item.category_id && categorySelect.value === '') {
+                    categorySelect.value = item.category_id;
+                }
+                
+                // Projekt auswählen, wenn vorhanden und keins ausgewählt ist
+                if (item.project_id && projectSelect.value === '') {
+                    projectSelect.value = item.project_id;
+                }
+                
+                descriptionSuggestions.style.display = 'none';
             }
 
             // Funktion für Betragsvorschläge
@@ -185,15 +221,26 @@
 
                 const projectId = projectSelect.value;
 
-                fetch(`/expenses/suggestions?field=value&category_id=${categoryId}&project_id=${projectId}`)
+                fetch(`<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}`)
                     .then(response => response.json())
                     .then(data => {
+                        currentSuggestions = data;
+                        currentSuggestionIndex = -1;
+                        
                         valueSuggestions.innerHTML = '';
                         if (data.length > 0) {
-                            data.forEach(item => {
+                            data.forEach((item, index) => {
                                 const div = document.createElement('div');
                                 div.className = 'suggestion-item';
-                                div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
+                                div.dataset.index = index;
+                                
+                                // Formatierter Betrag mit Beschreibung und Häufigkeit
+                                if (item.count && item.count > 1) {
+                                    div.innerHTML = `${Math.abs(item.value).toFixed(2)} € - ${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                                } else {
+                                    div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
+                                }
+                                
                                 div.addEventListener('click', () => {
                                     valueInput.value = Math.abs(item.value);
                                     valueSuggestions.style.display = 'none';
@@ -201,8 +248,57 @@
                                 valueSuggestions.appendChild(div);
                             });
                             valueSuggestions.style.display = 'block';
+                        } else {
+                            valueSuggestions.style.display = 'none';
                         }
                     });
+            }
+
+            // Tastaturnavigation für Vorschläge
+            function handleKeyNavigation(e, suggestionContainer) {
+                const suggestionItems = suggestionContainer.querySelectorAll('.suggestion-item');
+                
+                if (!suggestionItems.length || suggestionContainer.style.display === 'none') {
+                    return;
+                }
+                
+                // Pfeil nach unten
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentSuggestionIndex = Math.min(currentSuggestionIndex + 1, suggestionItems.length - 1);
+                    highlightSuggestion(suggestionItems);
+                }
+                
+                // Pfeil nach oben
+                else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentSuggestionIndex = Math.max(currentSuggestionIndex - 1, 0);
+                    highlightSuggestion(suggestionItems);
+                }
+                
+                // Enter-Taste
+                else if (e.key === 'Enter' && currentSuggestionIndex >= 0) {
+                    e.preventDefault();
+                    suggestionItems[currentSuggestionIndex].click();
+                }
+                
+                // Escape-Taste
+                else if (e.key === 'Escape') {
+                    suggestionContainer.style.display = 'none';
+                    currentSuggestionIndex = -1;
+                }
+            }
+            
+            // Markiert den ausgewählten Vorschlag
+            function highlightSuggestion(items) {
+                items.forEach((item, index) => {
+                    if (index === currentSuggestionIndex) {
+                        item.classList.add('bg-primary', 'text-white');
+                        item.scrollIntoView({ block: 'nearest' });
+                    } else {
+                        item.classList.remove('bg-primary', 'text-white');
+                    }
+                });
             }
 
             // Event-Listener
@@ -210,8 +306,16 @@
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(fetchDescriptionSuggestions, 300);
             });
+            
+            descriptionInput.addEventListener('keydown', (e) => {
+                handleKeyNavigation(e, descriptionSuggestions);
+            });
 
             valueInput.addEventListener('focus', fetchValueSuggestions);
+            
+            valueInput.addEventListener('keydown', (e) => {
+                handleKeyNavigation(e, valueSuggestions);
+            });
 
             categorySelect.addEventListener('change', () => {
                 if (descriptionInput.value.trim().length >= 2) {

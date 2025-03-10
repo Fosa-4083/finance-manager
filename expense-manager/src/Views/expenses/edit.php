@@ -62,8 +62,11 @@
                             
                             <div class="mb-3">
                                 <label for="description" class="form-label">Beschreibung</label>
-                                <textarea class="form-control" id="description" name="description" 
-                                          rows="3"><?= htmlspecialchars($expense['description']); ?></textarea>
+                                <div class="form-group">
+                                    <textarea class="form-control" id="description" name="description" 
+                                             rows="3"><?= htmlspecialchars($expense['description']); ?></textarea>
+                                    <div id="descriptionSuggestions" class="suggestions-container"></div>
+                                </div>
                             </div>
                             
                             <div class="mb-3">
@@ -82,8 +85,11 @@
                             
                             <div class="mb-3">
                                 <label for="value" class="form-label">Betrag (€)</label>
-                                <input type="number" class="form-control" id="value" name="value" 
-                                       step="0.01" min="0.01" value="<?= abs($expense['value']); ?>" required>
+                                <div class="form-group">
+                                    <input type="number" class="form-control" id="value" name="value" 
+                                           step="0.01" min="0.01" value="<?= abs($expense['value']); ?>" required>
+                                    <div id="valueSuggestions" class="suggestions-container"></div>
+                                </div>
                             </div>
                             
                             <div class="mb-3 form-check">
@@ -104,5 +110,218 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const descriptionInput = document.getElementById('description');
+            const valueInput = document.getElementById('value');
+            const categorySelect = document.getElementById('category_id');
+            const projectSelect = document.getElementById('project_id');
+            const descriptionSuggestions = document.getElementById('descriptionSuggestions');
+            const valueSuggestions = document.getElementById('valueSuggestions');
+
+            let debounceTimer;
+            let currentSuggestionIndex = -1;
+            let currentSuggestions = [];
+
+            // Funktion für Beschreibungsvorschläge
+            function fetchDescriptionSuggestions() {
+                const query = descriptionInput.value.trim();
+                if (query.length < 2) {
+                    descriptionSuggestions.style.display = 'none';
+                    return;
+                }
+
+                const categoryId = categorySelect.value;
+                const projectId = projectSelect.value;
+
+                fetch(`<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        currentSuggestions = data;
+                        currentSuggestionIndex = -1;
+                        
+                        descriptionSuggestions.innerHTML = '';
+                        if (data.length > 0) {
+                            data.forEach((item, index) => {
+                                const div = document.createElement('div');
+                                div.className = 'suggestion-item';
+                                div.dataset.index = index;
+                                
+                                // Anzahl der Verwendungen anzeigen
+                                if (item.count && item.count > 1) {
+                                    div.innerHTML = `${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                                } else {
+                                    div.textContent = item.description;
+                                }
+                                
+                                div.addEventListener('click', () => {
+                                    applyDescriptionSuggestion(item);
+                                });
+                                descriptionSuggestions.appendChild(div);
+                            });
+                            descriptionSuggestions.style.display = 'block';
+                        } else {
+                            descriptionSuggestions.style.display = 'none';
+                        }
+                    });
+            }
+
+            // Funktion zum Anwenden eines Beschreibungsvorschlags
+            function applyDescriptionSuggestion(item) {
+                descriptionInput.value = item.description;
+                
+                // Betrag übernehmen, wenn vorhanden
+                if (item.value) {
+                    valueInput.value = Math.abs(item.value);
+                }
+                
+                // Kategorie auswählen, wenn vorhanden und keine ausgewählt ist
+                if (item.category_id && categorySelect.value === '') {
+                    categorySelect.value = item.category_id;
+                }
+                
+                // Projekt auswählen, wenn vorhanden und keins ausgewählt ist
+                if (item.project_id && projectSelect.value === '') {
+                    projectSelect.value = item.project_id;
+                }
+                
+                descriptionSuggestions.style.display = 'none';
+            }
+
+            // Funktion für Betragsvorschläge
+            function fetchValueSuggestions() {
+                const categoryId = categorySelect.value;
+                if (!categoryId) {
+                    valueSuggestions.style.display = 'none';
+                    return;
+                }
+
+                const projectId = projectSelect.value;
+
+                fetch(`<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        currentSuggestions = data;
+                        currentSuggestionIndex = -1;
+                        
+                        valueSuggestions.innerHTML = '';
+                        if (data.length > 0) {
+                            data.forEach((item, index) => {
+                                const div = document.createElement('div');
+                                div.className = 'suggestion-item';
+                                div.dataset.index = index;
+                                
+                                // Formatierter Betrag mit Beschreibung und Häufigkeit
+                                if (item.count && item.count > 1) {
+                                    div.innerHTML = `${Math.abs(item.value).toFixed(2)} € - ${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                                } else {
+                                    div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
+                                }
+                                
+                                div.addEventListener('click', () => {
+                                    valueInput.value = Math.abs(item.value);
+                                    valueSuggestions.style.display = 'none';
+                                });
+                                valueSuggestions.appendChild(div);
+                            });
+                            valueSuggestions.style.display = 'block';
+                        } else {
+                            valueSuggestions.style.display = 'none';
+                        }
+                    });
+            }
+
+            // Tastaturnavigation für Vorschläge
+            function handleKeyNavigation(e, suggestionContainer) {
+                const suggestionItems = suggestionContainer.querySelectorAll('.suggestion-item');
+                
+                if (!suggestionItems.length || suggestionContainer.style.display === 'none') {
+                    return;
+                }
+                
+                // Pfeil nach unten
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentSuggestionIndex = Math.min(currentSuggestionIndex + 1, suggestionItems.length - 1);
+                    highlightSuggestion(suggestionItems);
+                }
+                
+                // Pfeil nach oben
+                else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentSuggestionIndex = Math.max(currentSuggestionIndex - 1, 0);
+                    highlightSuggestion(suggestionItems);
+                }
+                
+                // Enter-Taste
+                else if (e.key === 'Enter' && currentSuggestionIndex >= 0) {
+                    e.preventDefault();
+                    suggestionItems[currentSuggestionIndex].click();
+                }
+                
+                // Escape-Taste
+                else if (e.key === 'Escape') {
+                    suggestionContainer.style.display = 'none';
+                    currentSuggestionIndex = -1;
+                }
+            }
+            
+            // Markiert den ausgewählten Vorschlag
+            function highlightSuggestion(items) {
+                items.forEach((item, index) => {
+                    if (index === currentSuggestionIndex) {
+                        item.classList.add('bg-primary', 'text-white');
+                        item.scrollIntoView({ block: 'nearest' });
+                    } else {
+                        item.classList.remove('bg-primary', 'text-white');
+                    }
+                });
+            }
+
+            // Event-Listener
+            descriptionInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(fetchDescriptionSuggestions, 300);
+            });
+            
+            descriptionInput.addEventListener('keydown', (e) => {
+                handleKeyNavigation(e, descriptionSuggestions);
+            });
+
+            valueInput.addEventListener('focus', fetchValueSuggestions);
+            
+            valueInput.addEventListener('keydown', (e) => {
+                handleKeyNavigation(e, valueSuggestions);
+            });
+
+            categorySelect.addEventListener('change', () => {
+                if (descriptionInput.value.trim().length >= 2) {
+                    fetchDescriptionSuggestions();
+                }
+                if (document.activeElement === valueInput) {
+                    fetchValueSuggestions();
+                }
+            });
+
+            projectSelect.addEventListener('change', () => {
+                if (descriptionInput.value.trim().length >= 2) {
+                    fetchDescriptionSuggestions();
+                }
+                if (document.activeElement === valueInput) {
+                    fetchValueSuggestions();
+                }
+            });
+
+            // Klick außerhalb schließt Vorschläge
+            document.addEventListener('click', (e) => {
+                if (!descriptionInput.contains(e.target) && !descriptionSuggestions.contains(e.target)) {
+                    descriptionSuggestions.style.display = 'none';
+                }
+                if (!valueInput.contains(e.target) && !valueSuggestions.contains(e.target)) {
+                    valueSuggestions.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html> 
