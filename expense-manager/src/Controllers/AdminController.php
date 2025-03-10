@@ -22,9 +22,9 @@ class AdminController {
      * Zeigt die Backup-Verwaltung an
      */
     public function backups() {
-        // Prüfen, ob Benutzer Admin ist
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-            $_SESSION['error'] = 'Sie haben keine Berechtigung, diese Seite aufzurufen.';
+        // Benutzer muss eingeloggt sein (aber nicht mehr Admin)
+        if (!isset($_SESSION['user'])) {
+            $_SESSION['error'] = 'Sie müssen angemeldet sein, um diese Seite aufzurufen.';
             header('Location: ' . Path::url('/'));
             exit;
         }
@@ -49,9 +49,9 @@ class AdminController {
      * Erstellt manuell ein Backup
      */
     public function createBackup() {
-        // Prüfen, ob Benutzer Admin ist
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-            $_SESSION['error'] = 'Sie haben keine Berechtigung, diese Aktion auszuführen.';
+        // Benutzer muss eingeloggt sein (aber nicht mehr Admin)
+        if (!isset($_SESSION['user'])) {
+            $_SESSION['error'] = 'Sie müssen angemeldet sein, um diese Aktion auszuführen.';
             header('Location: ' . Path::url('/'));
             exit;
         }
@@ -87,9 +87,9 @@ class AdminController {
      * Stellt ein Backup wieder her
      */
     public function restoreBackup() {
-        // Prüfen, ob Benutzer Admin ist
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-            $_SESSION['error'] = 'Sie haben keine Berechtigung, diese Aktion auszuführen.';
+        // Benutzer muss eingeloggt sein (aber nicht mehr Admin)
+        if (!isset($_SESSION['user'])) {
+            $_SESSION['error'] = 'Sie müssen angemeldet sein, um diese Aktion auszuführen.';
             header('Location: ' . Path::url('/'));
             exit;
         }
@@ -121,9 +121,9 @@ class AdminController {
      * Löscht ein Backup
      */
     public function deleteBackup() {
-        // Prüfen, ob Benutzer Admin ist
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-            $_SESSION['error'] = 'Sie haben keine Berechtigung, diese Aktion auszuführen.';
+        // Benutzer muss eingeloggt sein (aber nicht mehr Admin)
+        if (!isset($_SESSION['user'])) {
+            $_SESSION['error'] = 'Sie müssen angemeldet sein, um diese Aktion auszuführen.';
             header('Location: ' . Path::url('/'));
             exit;
         }

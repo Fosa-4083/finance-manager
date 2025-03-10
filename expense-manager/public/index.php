@@ -21,6 +21,7 @@ require_once __DIR__ . '/../src/Utils/Path.php';
 require_once __DIR__ . '/../src/Utils/Backup.php';
 require_once __DIR__ . '/../src/Utils/Database.php';
 require_once __DIR__ . '/../src/Controllers/AdminController.php';
+require_once __DIR__ . '/../src/Controllers/UserController.php';
 
 use Controllers\CategoryController;
 use Controllers\ExpenseController;
@@ -29,6 +30,7 @@ use Controllers\DashboardController;
 use Controllers\ProjectController;
 use Controllers\AuthController;
 use Controllers\AdminController;
+use Controllers\UserController;
 use Utils\Session;
 use Utils\Path;
 use Utils\Database;
@@ -60,8 +62,6 @@ Path::setBasePath($basePath);
 // Authentifizierungs-Routen (nur für Gäste)
 $router->addRoute('/login', 'Controllers\AuthController', 'showLoginForm', false, true);
 $router->addRoute('/login/process', 'Controllers\AuthController', 'login', false, true);
-$router->addRoute('/register', 'Controllers\AuthController', 'showRegisterForm', false, true);
-$router->addRoute('/register/process', 'Controllers\AuthController', 'register', false, true);
 $router->addRoute('/logout', 'Controllers\AuthController', 'logout', true);
 
 // Dashboard als Startseite (erfordert Authentifizierung)
@@ -107,6 +107,14 @@ $router->addRoute('/admin/backups', 'Controllers\AdminController', 'backups', tr
 $router->addRoute('/admin/create-backup', 'Controllers\AdminController', 'createBackup', true);
 $router->addRoute('/admin/restore-backup', 'Controllers\AdminController', 'restoreBackup', true);
 $router->addRoute('/admin/delete-backup', 'Controllers\AdminController', 'deleteBackup', true);
+
+// Routen für Benutzerverwaltung (erfordern Authentifizierung)
+$router->addRoute('/users', 'Controllers\UserController', 'index', true);
+$router->addRoute('/users/create', 'Controllers\UserController', 'create', true);
+$router->addRoute('/users/store', 'Controllers\UserController', 'store', true);
+$router->addRoute('/users/edit', 'Controllers\UserController', 'edit', true);
+$router->addRoute('/users/update', 'Controllers\UserController', 'update', true);
+$router->addRoute('/users/delete', 'Controllers\UserController', 'delete', true);
 
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $router->dispatch($requestUri); 

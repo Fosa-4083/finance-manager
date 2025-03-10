@@ -45,9 +45,8 @@ $user = $session->getUser();
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="<?php echo \Utils\Path::url('/profile'); ?>"><i class="bi bi-person"></i> Profil</a></li>
-                            <?php if (isset($user['role']) && $user['role'] === 'admin'): ?>
                             <li><a class="dropdown-item" href="<?php echo \Utils\Path::url('/admin/backups'); ?>"><i class="bi bi-database"></i> Datenbank-Backups</a></li>
-                            <?php endif; ?>
+                            <li><a class="dropdown-item" href="<?php echo \Utils\Path::url('/users'); ?>"><i class="bi bi-people"></i> Benutzerverwaltung</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="<?php echo \Utils\Path::url('/logout'); ?>"><i class="bi bi-box-arrow-right"></i> Abmelden</a></li>
                         </ul>
