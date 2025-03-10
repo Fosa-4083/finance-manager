@@ -18,6 +18,7 @@
             border-radius: 4px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             z-index: 1000;
+            margin-top: 2px; /* Abstand zum Eingabefeld */
         }
         
         .suggestion-item {
@@ -36,6 +37,13 @@
         
         .form-group {
             position: relative;
+            margin-bottom: 1rem;
+        }
+        
+        /* Debug-Stil für Sichtbarkeit */
+        .debug-visible {
+            border: 2px solid red !important;
+            min-height: 30px;
         }
     </style>
 </head>
@@ -92,7 +100,7 @@
                                 <label for="description" class="form-label">Beschreibung</label>
                                 <div class="form-group">
                                     <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                                    <div id="descriptionSuggestions" class="suggestions-container"></div>
+                                    <div id="descriptionSuggestions" class="suggestions-container debug-visible"></div>
                                 </div>
                             </div>
                             
@@ -112,7 +120,7 @@
                                 <label for="value" class="form-label">Betrag (€)</label>
                                 <div class="form-group">
                                     <input type="number" class="form-control" id="value" name="value" step="0.01" min="0.01" required>
-                                    <div id="valueSuggestions" class="suggestions-container"></div>
+                                    <div id="valueSuggestions" class="suggestions-container debug-visible"></div>
                                 </div>
                             </div>
                             
@@ -141,6 +149,16 @@
             const projectSelect = document.getElementById('project_id');
             const descriptionSuggestions = document.getElementById('descriptionSuggestions');
             const valueSuggestions = document.getElementById('valueSuggestions');
+            
+            // Debug-Ausgabe für DOM-Elemente
+            console.log('DOM-Elemente:', {
+                descriptionInput: descriptionInput,
+                valueInput: valueInput,
+                categorySelect: categorySelect,
+                projectSelect: projectSelect,
+                descriptionSuggestions: descriptionSuggestions,
+                valueSuggestions: valueSuggestions
+            });
 
             let debounceTimer;
             let currentSuggestionIndex = -1;
@@ -149,6 +167,8 @@
             // Funktion für Beschreibungsvorschläge
             function fetchDescriptionSuggestions() {
                 const query = descriptionInput.value.trim();
+                console.log('Beschreibungssuche:', query);
+                
                 if (query.length < 2) {
                     descriptionSuggestions.style.display = 'none';
                     return;
@@ -156,10 +176,17 @@
 
                 const categoryId = categorySelect.value;
                 const projectId = projectSelect.value;
+                
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`;
+                console.log('Anfrage-URL:', url);
 
-                fetch(`<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`)
-                    .then(response => response.json())
+                fetch(url)
+                    .then(response => {
+                        console.log('Server-Antwort:', response);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Vorschlagsdaten:', data);
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
@@ -183,9 +210,14 @@
                                 descriptionSuggestions.appendChild(div);
                             });
                             descriptionSuggestions.style.display = 'block';
+                            console.log('Vorschläge angezeigt:', descriptionSuggestions.style.display);
                         } else {
                             descriptionSuggestions.style.display = 'none';
+                            console.log('Keine Vorschläge gefunden');
                         }
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Abrufen der Vorschläge:', error);
                     });
             }
 

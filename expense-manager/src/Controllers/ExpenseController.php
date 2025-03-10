@@ -520,6 +520,9 @@ class ExpenseController {
     }
 
     public function getSuggestions() {
+        // Debug-Info in Logdatei schreiben
+        error_log('getSuggestions wurde aufgerufen mit Query: ' . ($_GET['query'] ?? 'keine'));
+        
         $query = $_GET['query'] ?? '';
         $field = $_GET['field'] ?? '';
         $category_id = $_GET['category_id'] ?? null;
@@ -530,10 +533,9 @@ class ExpenseController {
 
         switch ($field) {
             case 'description':
-                // Verbesserte Abfrage für Beschreibungsvorschläge mit mehr Kontext
-                $sql = 'SELECT DISTINCT description, value, category_id, project_id, 
-                        (SELECT COUNT(*) FROM expenses e2 WHERE e2.description = e.description) as count
-                       FROM expenses e
+                // Einfachere Abfrage für Beschreibungsvorschläge
+                $sql = 'SELECT DISTINCT description, value, category_id
+                       FROM expenses
                        WHERE description LIKE :query';
                 if ($category_id) {
                     $sql .= ' AND category_id = :category_id';
@@ -543,34 +545,40 @@ class ExpenseController {
                     $sql .= ' AND project_id = :project_id';
                     $params[':project_id'] = $project_id;
                 }
-                $sql .= ' ORDER BY count DESC, date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
+                $sql .= ' ORDER BY date DESC LIMIT 8';
                 $params[':query'] = '%' . $query . '%';
                 break;
 
             case 'value':
-                // Verbesserte Abfrage für Betragsvorschläge mit Beschreibung und Häufigkeit
-                $sql = 'SELECT DISTINCT ABS(value) as value, description, 
-                        (SELECT COUNT(*) FROM expenses e2 WHERE ABS(e2.value) = ABS(e.value) AND e2.category_id = e.category_id) as count
-                       FROM expenses e
+                // Einfachere Abfrage für Betragsvorschläge
+                $sql = 'SELECT DISTINCT ABS(value) as value, description
+                       FROM expenses
                        WHERE category_id = :category_id';
                 if ($project_id) {
                     $sql .= ' AND project_id = :project_id';
                     $params[':project_id'] = $project_id;
                 }
-                $sql .= ' ORDER BY count DESC, date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
+                $sql .= ' ORDER BY date DESC LIMIT 8';
                 $params[':category_id'] = $category_id;
                 break;
         }
 
         if ($sql) {
             try {
+                // Debug-Info
+                error_log('Executing SQL: ' . $sql . ' with params: ' . json_encode($params));
+                
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute($params);
                 $suggestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
+                // Debug-Info
+                error_log('Found suggestions: ' . count($suggestions));
+                
                 header('Content-Type: application/json');
                 echo json_encode($suggestions);
             } catch (\PDOException $e) {
+                error_log('Error in getSuggestions: ' . $e->getMessage());
                 header('Content-Type: application/json');
                 echo json_encode(['error' => 'Datenbankfehler: ' . $e->getMessage()]);
             }
