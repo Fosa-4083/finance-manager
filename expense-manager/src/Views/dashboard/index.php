@@ -472,7 +472,7 @@
             let currentSuggestionIndex = -1;
             let currentSuggestions = [];
 
-            // Funktion für Beschreibungsvorschläge
+            // Aktualisierte Funktion für Beschreibungsvorschläge
             function fetchDescriptionSuggestions() {
                 const query = descriptionInput.value.trim();
                 
@@ -484,7 +484,9 @@
                 const categoryId = categorySelect.value;
                 const projectId = projectSelect.value;
                 
-                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`;
+                // Cache-Busting durch Hinzufügen eines Zeitstempels
+                const cacheBuster = new Date().getTime();
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
 
                 fetch(url)
                     .then(response => {
@@ -494,6 +496,8 @@
                         return response.json();
                     })
                     .then(data => {
+                        console.log('Erhaltene Vorschläge:', data); // Debug-Logging
+                        
                         if (!data || data.length === 0) {
                             descriptionSuggestions.style.display = 'none';
                             return;
@@ -530,26 +534,7 @@
                     });
             }
 
-            // Funktion zum Anwenden eines Beschreibungsvorschlags
-            function applyDescriptionSuggestion(item) {
-                descriptionInput.value = item.description;
-                
-                // Betrag übernehmen, wenn vorhanden
-                if (item.value) {
-                    valueInput.value = Math.abs(item.value);
-                }
-                
-                // Kategorie auswählen, wenn vorhanden und keine ausgewählt ist
-                if (item.category_id && categorySelect.value === '') {
-                    categorySelect.value = item.category_id;
-                    // Typ der Buchung aktualisieren (Einnahme/Ausgabe)
-                    updateCategoryType();
-                }
-                
-                descriptionSuggestions.style.display = 'none';
-            }
-
-            // Funktion für Betragsvorschläge
+            // Aktualisierte Funktion für Betragsvorschläge
             function fetchValueSuggestions() {
                 const categoryId = categorySelect.value;
                 if (!categoryId) {
@@ -559,7 +544,9 @@
 
                 const projectId = projectSelect.value;
                 
-                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}`;
+                // Cache-Busting durch Hinzufügen eines Zeitstempels
+                const cacheBuster = new Date().getTime();
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
                 
                 fetch(url)
                     .then(response => {
@@ -569,6 +556,8 @@
                         return response.json();
                     })
                     .then(data => {
+                        console.log('Erhaltene Wertvorschläge:', data); // Debug-Logging
+                        
                         if (!data || data.length === 0) {
                             valueSuggestions.style.display = 'none';
                             return;
@@ -604,6 +593,25 @@
                         console.error('Fehler beim Abrufen der Wertvorschläge:', error);
                         valueSuggestions.style.display = 'none';
                     });
+            }
+
+            // Funktion zum Anwenden eines Beschreibungsvorschlags
+            function applyDescriptionSuggestion(item) {
+                descriptionInput.value = item.description;
+                
+                // Betrag übernehmen, wenn vorhanden
+                if (item.value) {
+                    valueInput.value = Math.abs(item.value);
+                }
+                
+                // Kategorie auswählen, wenn vorhanden und keine ausgewählt ist
+                if (item.category_id && categorySelect.value === '') {
+                    categorySelect.value = item.category_id;
+                    // Typ der Buchung aktualisieren (Einnahme/Ausgabe)
+                    updateCategoryType();
+                }
+                
+                descriptionSuggestions.style.display = 'none';
             }
 
             // Funktion zur Aktualisierung des Typs (Einnahme/Ausgabe) basierend auf der ausgewählten Kategorie

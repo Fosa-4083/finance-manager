@@ -176,7 +176,9 @@
                 const categoryId = categorySelect.value;
                 const projectId = projectSelect.value;
                 
-                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`;
+                // Cache-Busting durch Hinzufügen eines Zeitstempels
+                const cacheBuster = new Date().getTime();
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
 
                 fetch(url)
                     .then(response => {
@@ -186,6 +188,8 @@
                         return response.json();
                     })
                     .then(data => {
+                        console.log('Erhaltene Vorschläge:', data); // Debug-Logging
+                        
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
@@ -253,7 +257,9 @@
 
                 const projectId = projectSelect.value;
                 
-                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}`;
+                // Cache-Busting durch Hinzufügen eines Zeitstempels
+                const cacheBuster = new Date().getTime();
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
                 
                 fetch(url)
                     .then(response => {
@@ -263,6 +269,8 @@
                         return response.json();
                     })
                     .then(data => {
+                        console.log('Erhaltene Wertvorschläge:', data); // Debug-Logging
+                        
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
