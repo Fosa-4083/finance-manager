@@ -171,64 +171,46 @@
                 
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`;
 
-                // Direktes Einfügen von Test-Vorschlägen, falls die API-Anfrage fehlschlägt
-                const testSuggestions = [
-                    { description: "Testsvorschlag 1 für: " + query, value: "10.00" },
-                    { description: "Testsvorschlag 2 für: " + query, value: "20.00" },
-                    { description: "Testsvorschlag 3 für: " + query, value: "30.00" }
-                ];
-                
-                // Timeout für die Fetch-Anfrage setzen
-                const fetchPromise = fetch(url)
+                fetch(url)
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Server-Antwort nicht OK');
                         }
                         return response.json();
                     })
-                    .catch(error => {
-                        // Bei Fehlern Test-Vorschläge zurückgeben
-                        return testSuggestions;
-                    });
-                
-                // Promise mit Timeout
-                const timeoutPromise = new Promise((resolve) => {
-                    setTimeout(() => {
-                        resolve(testSuggestions);
-                    }, 2000); // 2 Sekunden Timeout
-                });
-                
-                // Verwende das Promise, das zuerst erfüllt wird
-                Promise.race([fetchPromise, timeoutPromise])
                     .then(data => {
-                        if (!data || data.length === 0) {
-                            data = testSuggestions;
-                        }
-                        
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
                         descriptionSuggestions.innerHTML = '';
                         
-                        data.forEach((item, index) => {
-                            const div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.dataset.index = index;
-                            
-                            // Anzahl der Verwendungen anzeigen
-                            if (item.count && item.count > 1) {
-                                div.innerHTML = `${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
-                            } else {
-                                div.textContent = item.description;
-                            }
-                            
-                            div.addEventListener('click', () => {
-                                applyDescriptionSuggestion(item);
+                        if (data && data.length > 0) {
+                            data.forEach((item, index) => {
+                                const div = document.createElement('div');
+                                div.className = 'suggestion-item';
+                                div.dataset.index = index;
+                                
+                                // Anzahl der Verwendungen anzeigen
+                                if (item.count && item.count > 1) {
+                                    div.innerHTML = `${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                                } else {
+                                    div.textContent = item.description;
+                                }
+                                
+                                div.addEventListener('click', () => {
+                                    applyDescriptionSuggestion(item);
+                                });
+                                descriptionSuggestions.appendChild(div);
                             });
-                            descriptionSuggestions.appendChild(div);
-                        });
-                        
-                        descriptionSuggestions.style.display = 'block';
+                            
+                            descriptionSuggestions.style.display = 'block';
+                        } else {
+                            descriptionSuggestions.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Abrufen der Vorschläge:', error);
+                        descriptionSuggestions.style.display = 'none';
                     });
             }
 
@@ -266,65 +248,47 @@
                 
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}`;
                 
-                // Direktes Einfügen von Test-Vorschlägen, falls die API-Anfrage fehlschlägt
-                const testSuggestions = [
-                    { value: "10.00", description: "Test-Wertvorschlag 1" },
-                    { value: "20.00", description: "Test-Wertvorschlag 2" },
-                    { value: "30.00", description: "Test-Wertvorschlag 3" }
-                ];
-                
-                // Timeout für die Fetch-Anfrage setzen
-                const fetchPromise = fetch(url)
+                fetch(url)
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Server-Antwort nicht OK');
                         }
                         return response.json();
                     })
-                    .catch(error => {
-                        // Bei Fehlern Test-Vorschläge zurückgeben
-                        return testSuggestions;
-                    });
-                
-                // Promise mit Timeout
-                const timeoutPromise = new Promise((resolve) => {
-                    setTimeout(() => {
-                        resolve(testSuggestions);
-                    }, 2000); // 2 Sekunden Timeout
-                });
-                
-                // Verwende das Promise, das zuerst erfüllt wird
-                Promise.race([fetchPromise, timeoutPromise])
                     .then(data => {
-                        if (!data || data.length === 0) {
-                            data = testSuggestions;
-                        }
-                        
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
                         valueSuggestions.innerHTML = '';
                         
-                        data.forEach((item, index) => {
-                            const div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.dataset.index = index;
-                            
-                            // Formatierter Betrag mit Beschreibung und Häufigkeit
-                            if (item.count && item.count > 1) {
-                                div.innerHTML = `${Math.abs(item.value).toFixed(2)} € - ${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
-                            } else {
-                                div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
-                            }
-                            
-                            div.addEventListener('click', () => {
-                                valueInput.value = Math.abs(item.value);
-                                valueSuggestions.style.display = 'none';
+                        if (data && data.length > 0) {
+                            data.forEach((item, index) => {
+                                const div = document.createElement('div');
+                                div.className = 'suggestion-item';
+                                div.dataset.index = index;
+                                
+                                // Formatierter Betrag mit Beschreibung und Häufigkeit
+                                if (item.count && item.count > 1) {
+                                    div.innerHTML = `${Math.abs(item.value).toFixed(2)} € - ${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                                } else {
+                                    div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
+                                }
+                                
+                                div.addEventListener('click', () => {
+                                    valueInput.value = Math.abs(item.value);
+                                    valueSuggestions.style.display = 'none';
+                                });
+                                valueSuggestions.appendChild(div);
                             });
-                            valueSuggestions.appendChild(div);
-                        });
-                        
-                        valueSuggestions.style.display = 'block';
+                            
+                            valueSuggestions.style.display = 'block';
+                        } else {
+                            valueSuggestions.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Abrufen der Wertvorschläge:', error);
+                        valueSuggestions.style.display = 'none';
                     });
             }
 
