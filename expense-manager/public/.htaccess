@@ -1,4 +1,5 @@
 RewriteEngine On
+RewriteBase /expense-manager/public
 
 # Wenn es sich um eine existierende Datei oder ein Verzeichnis handelt, direkt ausliefern
 RewriteCond %{REQUEST_FILENAME} -f [OR]

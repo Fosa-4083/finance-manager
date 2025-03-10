@@ -7,9 +7,19 @@ class Router {
     private $authRoutes = [];
     private $guestRoutes = [];
     private $db;
+    private $basePath = '';
 
     public function __construct($db) {
         $this->db = $db;
+    }
+
+    /**
+     * Basispfad für die Anwendung setzen
+     * 
+     * @param string $path Basispfad (z.B. /expense-manager)
+     */
+    public function setBasePath($path) {
+        $this->basePath = $path;
     }
 
     /**
@@ -49,6 +59,16 @@ class Router {
      * @return mixed Ergebnis der Route-Verarbeitung
      */
     public function dispatch($uri) {
+        // Basispfad entfernen, wenn vorhanden
+        if (!empty($this->basePath) && strpos($uri, $this->basePath) === 0) {
+            $uri = substr($uri, strlen($this->basePath));
+        }
+        
+        // Wenn der URI leer ist, setze ihn auf '/'
+        if (empty($uri)) {
+            $uri = '/';
+        }
+        
         // URI-Parameter extrahieren (z.B. /projects/edit?id=1)
         $path = parse_url($uri, PHP_URL_PATH);
         
@@ -58,13 +78,13 @@ class Router {
         // Prüfen, ob die Route eine Authentifizierung erfordert
         if (in_array($path, $this->authRoutes) && !$session->isLoggedIn()) {
             $session->setFlash('error', 'Bitte melden Sie sich an, um auf diese Seite zuzugreifen.');
-            header('Location: /login');
+            header('Location: ' . $this->basePath . '/login');
             exit;
         }
 
         // Prüfen, ob die Route nur für nicht angemeldete Benutzer zugänglich ist
         if (in_array($path, $this->guestRoutes) && $session->isLoggedIn()) {
-            header('Location: /');
+            header('Location: ' . $this->basePath . '/');
             exit;
         }
 

@@ -41,6 +41,14 @@ $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $router = new Router($db);
 
+// Basispfad für die Anwendung setzen (z.B. /expense-manager)
+$basePath = '';
+$requestUri = $_SERVER['REQUEST_URI'];
+if (preg_match('/^(\/[^\/]+)\//', $requestUri, $matches)) {
+    $basePath = $matches[1];
+}
+$router->setBasePath($basePath);
+
 // Authentifizierungs-Routen (nur für Gäste)
 $router->addRoute('/login', 'Controllers\AuthController', 'showLoginForm', false, true);
 $router->addRoute('/login/process', 'Controllers\AuthController', 'login', false, true);
