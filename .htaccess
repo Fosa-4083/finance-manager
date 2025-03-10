@@ -1,0 +1,12 @@
+Options +FollowSymLinks
+RewriteEngine On
+
+# Erlaube Zugriff auf alle Dateien
+<Files *>
+    Require all granted
+    Allow from all
+</Files>
+
+# Wenn die Anfrage direkt an das Hauptverzeichnis geht
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^$ /expense-manager/ [L,R=301] 
