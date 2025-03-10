@@ -124,4 +124,4 @@ foreach ($files as $file) {
         echo "<li>" . htmlspecialchars($file) . ": <span style='color:red'>Nicht gefunden</span></li>";
     }
 }
-echo "</ul>"; 
+echo "</ul>";

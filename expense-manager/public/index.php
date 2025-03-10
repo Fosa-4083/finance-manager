@@ -18,6 +18,9 @@ require_once __DIR__ . '/../src/Controllers/ProjectController.php';
 require_once __DIR__ . '/../src/Controllers/AuthController.php';
 require_once __DIR__ . '/../src/Utils/Session.php';
 require_once __DIR__ . '/../src/Utils/Path.php';
+require_once __DIR__ . '/../src/Utils/Backup.php';
+require_once __DIR__ . '/../src/Utils/Database.php';
+require_once __DIR__ . '/../src/Controllers/AdminController.php';
 
 use Controllers\CategoryController;
 use Controllers\ExpenseController;
@@ -25,16 +28,23 @@ use Controllers\ExpenseGoalController;
 use Controllers\DashboardController;
 use Controllers\ProjectController;
 use Controllers\AuthController;
+use Controllers\AdminController;
 use Utils\Session;
 use Utils\Path;
+use Utils\Database;
 
 // Session starten
 Session::start();
 $session = Session::getInstance();
 
-// Datenbank initialisieren
-$db = new PDO('sqlite:' . __DIR__ . '/../database/database.sqlite');
+// Datenbank initialisieren mit automatischer Backup-Funktion
+$dsn = 'sqlite:' . __DIR__ . '/../database/database.sqlite';
+$db = new Database($dsn);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+// Log-Information für Backups
+$backupInfo = "<!-- Backup-System aktiviert. Backups werden vor der ersten schreibenden Transaktion des Tages erstellt. -->";
+echo $backupInfo;
 
 $router = new Router($db);
 
@@ -91,6 +101,12 @@ $router->addRoute('/projects/edit', 'Controllers\ProjectController', 'edit', tru
 $router->addRoute('/projects/update', 'Controllers\ProjectController', 'update', true);
 $router->addRoute('/projects/delete', 'Controllers\ProjectController', 'delete', true);
 $router->addRoute('/projects/show', 'Controllers\ProjectController', 'show', true);
+
+// Routen für Admin-Funktionen (erfordern Admin-Rechte)
+$router->addRoute('/admin/backups', 'Controllers\AdminController', 'backups', true);
+$router->addRoute('/admin/create-backup', 'Controllers\AdminController', 'createBackup', true);
+$router->addRoute('/admin/restore-backup', 'Controllers\AdminController', 'restoreBackup', true);
+$router->addRoute('/admin/delete-backup', 'Controllers\AdminController', 'deleteBackup', true);
 
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $router->dispatch($requestUri); 
