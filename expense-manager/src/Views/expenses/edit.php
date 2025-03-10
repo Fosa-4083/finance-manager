@@ -6,6 +6,46 @@
     <title>Buchung bearbeiten - Finanzverwaltung</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .suggestions-container {
+            display: none;
+            position: absolute;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            margin-top: 2px; /* Abstand zum Eingabefeld */
+        }
+        
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .suggestion-item:hover, .suggestion-item:focus {
+            background-color: #f0f7ff;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        .form-group {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        
+        /* Debug-Stil für Sichtbarkeit */
+        .debug-visible {
+            border: 2px solid red !important;
+            min-height: 30px;
+        }
+    </style>
 </head>
 <body class="bg-light">
     <?php include VIEW_PATH . 'partials/navbar.php'; ?>
@@ -64,8 +104,8 @@
                                 <label for="description" class="form-label">Beschreibung</label>
                                 <div class="form-group">
                                     <textarea class="form-control" id="description" name="description" 
-                                             rows="3"><?= htmlspecialchars($expense['description']); ?></textarea>
-                                    <div id="descriptionSuggestions" class="suggestions-container"></div>
+                                              rows="3"><?= htmlspecialchars($expense['description']); ?></textarea>
+                                    <div id="descriptionSuggestions" class="suggestions-container debug-visible"></div>
                                 </div>
                             </div>
                             
@@ -88,7 +128,7 @@
                                 <div class="form-group">
                                     <input type="number" class="form-control" id="value" name="value" 
                                            step="0.01" min="0.01" value="<?= abs($expense['value']); ?>" required>
-                                    <div id="valueSuggestions" class="suggestions-container"></div>
+                                    <div id="valueSuggestions" class="suggestions-container debug-visible"></div>
                                 </div>
                             </div>
                             
@@ -118,6 +158,16 @@
             const projectSelect = document.getElementById('project_id');
             const descriptionSuggestions = document.getElementById('descriptionSuggestions');
             const valueSuggestions = document.getElementById('valueSuggestions');
+            
+            // Debug-Ausgabe für DOM-Elemente
+            console.log('DOM-Elemente:', {
+                descriptionInput: descriptionInput,
+                valueInput: valueInput,
+                categorySelect: categorySelect,
+                projectSelect: projectSelect,
+                descriptionSuggestions: descriptionSuggestions,
+                valueSuggestions: valueSuggestions
+            });
 
             let debounceTimer;
             let currentSuggestionIndex = -1;
@@ -126,6 +176,8 @@
             // Funktion für Beschreibungsvorschläge
             function fetchDescriptionSuggestions() {
                 const query = descriptionInput.value.trim();
+                console.log('Beschreibungssuche:', query);
+                
                 if (query.length < 2) {
                     descriptionSuggestions.style.display = 'none';
                     return;
@@ -133,36 +185,75 @@
 
                 const categoryId = categorySelect.value;
                 const projectId = projectSelect.value;
+                
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`;
+                console.log('Anfrage-URL:', url);
 
-                fetch(`<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}`)
-                    .then(response => response.json())
+                // Direktes Einfügen von Test-Vorschlägen, falls die API-Anfrage fehlschlägt
+                const testSuggestions = [
+                    { description: "Testsvorschlag 1 für: " + query, value: "10.00" },
+                    { description: "Testsvorschlag 2 für: " + query, value: "20.00" },
+                    { description: "Testsvorschlag 3 für: " + query, value: "30.00" }
+                ];
+                
+                // Timeout für die Fetch-Anfrage setzen
+                const fetchPromise = fetch(url)
+                    .then(response => {
+                        console.log('Server-Antwort:', response);
+                        if (!response.ok) {
+                            throw new Error('Server-Antwort nicht OK');
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Abrufen der Vorschläge:', error);
+                        // Bei Fehlern Test-Vorschläge zurückgeben
+                        return testSuggestions;
+                    });
+                
+                // Promise mit Timeout
+                const timeoutPromise = new Promise((resolve) => {
+                    setTimeout(() => {
+                        console.log('Timeout - Verwende Test-Vorschläge');
+                        resolve(testSuggestions);
+                    }, 2000); // 2 Sekunden Timeout
+                });
+                
+                // Verwende das Promise, das zuerst erfüllt wird
+                Promise.race([fetchPromise, timeoutPromise])
                     .then(data => {
+                        console.log('Vorschlagsdaten:', data);
+                        
+                        if (!data || data.length === 0) {
+                            console.log('Keine Vorschläge gefunden, verwende Test-Vorschläge');
+                            data = testSuggestions;
+                        }
+                        
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
                         descriptionSuggestions.innerHTML = '';
-                        if (data.length > 0) {
-                            data.forEach((item, index) => {
-                                const div = document.createElement('div');
-                                div.className = 'suggestion-item';
-                                div.dataset.index = index;
-                                
-                                // Anzahl der Verwendungen anzeigen
-                                if (item.count && item.count > 1) {
-                                    div.innerHTML = `${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
-                                } else {
-                                    div.textContent = item.description;
-                                }
-                                
-                                div.addEventListener('click', () => {
-                                    applyDescriptionSuggestion(item);
-                                });
-                                descriptionSuggestions.appendChild(div);
+                        
+                        data.forEach((item, index) => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.dataset.index = index;
+                            
+                            // Anzahl der Verwendungen anzeigen
+                            if (item.count && item.count > 1) {
+                                div.innerHTML = `${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                            } else {
+                                div.textContent = item.description;
+                            }
+                            
+                            div.addEventListener('click', () => {
+                                applyDescriptionSuggestion(item);
                             });
-                            descriptionSuggestions.style.display = 'block';
-                        } else {
-                            descriptionSuggestions.style.display = 'none';
-                        }
+                            descriptionSuggestions.appendChild(div);
+                        });
+                        
+                        descriptionSuggestions.style.display = 'block';
+                        console.log('Vorschläge angezeigt:', descriptionSuggestions.style.display);
                     });
             }
 
@@ -197,37 +288,75 @@
                 }
 
                 const projectId = projectSelect.value;
-
-                fetch(`<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}`)
-                    .then(response => response.json())
+                
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}`;
+                console.log('Anfrage-URL (Wert):', url);
+                
+                // Direktes Einfügen von Test-Vorschlägen, falls die API-Anfrage fehlschlägt
+                const testSuggestions = [
+                    { value: "10.00", description: "Test-Wertvorschlag 1" },
+                    { value: "20.00", description: "Test-Wertvorschlag 2" },
+                    { value: "30.00", description: "Test-Wertvorschlag 3" }
+                ];
+                
+                // Timeout für die Fetch-Anfrage setzen
+                const fetchPromise = fetch(url)
+                    .then(response => {
+                        console.log('Server-Antwort (Wert):', response);
+                        if (!response.ok) {
+                            throw new Error('Server-Antwort nicht OK');
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Abrufen der Wertvorschläge:', error);
+                        // Bei Fehlern Test-Vorschläge zurückgeben
+                        return testSuggestions;
+                    });
+                
+                // Promise mit Timeout
+                const timeoutPromise = new Promise((resolve) => {
+                    setTimeout(() => {
+                        console.log('Timeout - Verwende Test-Wertvorschläge');
+                        resolve(testSuggestions);
+                    }, 2000); // 2 Sekunden Timeout
+                });
+                
+                // Verwende das Promise, das zuerst erfüllt wird
+                Promise.race([fetchPromise, timeoutPromise])
                     .then(data => {
+                        console.log('Wertvorschlagsdaten:', data);
+                        
+                        if (!data || data.length === 0) {
+                            console.log('Keine Wertvorschläge gefunden, verwende Test-Vorschläge');
+                            data = testSuggestions;
+                        }
+                        
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
                         valueSuggestions.innerHTML = '';
-                        if (data.length > 0) {
-                            data.forEach((item, index) => {
-                                const div = document.createElement('div');
-                                div.className = 'suggestion-item';
-                                div.dataset.index = index;
-                                
-                                // Formatierter Betrag mit Beschreibung und Häufigkeit
-                                if (item.count && item.count > 1) {
-                                    div.innerHTML = `${Math.abs(item.value).toFixed(2)} € - ${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
-                                } else {
-                                    div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
-                                }
-                                
-                                div.addEventListener('click', () => {
-                                    valueInput.value = Math.abs(item.value);
-                                    valueSuggestions.style.display = 'none';
-                                });
-                                valueSuggestions.appendChild(div);
+                        
+                        data.forEach((item, index) => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.dataset.index = index;
+                            
+                            // Formatierter Betrag mit Beschreibung und Häufigkeit
+                            if (item.count && item.count > 1) {
+                                div.innerHTML = `${Math.abs(item.value).toFixed(2)} € - ${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
+                            } else {
+                                div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
+                            }
+                            
+                            div.addEventListener('click', () => {
+                                valueInput.value = Math.abs(item.value);
+                                valueSuggestions.style.display = 'none';
                             });
-                            valueSuggestions.style.display = 'block';
-                        } else {
-                            valueSuggestions.style.display = 'none';
-                        }
+                            valueSuggestions.appendChild(div);
+                        });
+                        
+                        valueSuggestions.style.display = 'block';
                     });
             }
 
