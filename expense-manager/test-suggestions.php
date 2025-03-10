@@ -136,5 +136,7 @@ echo "</pre>";
 
 // Link zum Direkt-Testen der API (für Fehlersuche im Browser)
 echo "<p><a href='public/index.php?url=/expenses/suggestions&field=description&query=a' target='_blank'>API direkt testen (für description)</a></p>";
+// Besser: direkten Link zur API ohne Authentication
+echo "<p><a href='" . \Utils\Path::url('/expenses/suggestions') . "?field=description&query=a' target='_blank'>API direkt testen (URL mit Path)</a></p>";
 
 echo "<p><a href='public/index.php'>Zurück zur Anwendung</a></p>"; 
