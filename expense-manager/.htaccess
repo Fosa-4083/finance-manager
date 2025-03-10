@@ -1,7 +1,4 @@
-Options +FollowSymLinks
 RewriteEngine On
-
-# Basis-URL setzen
 RewriteBase /expense-manager
 
 # Wenn die Anfrage keine existierende Datei oder Verzeichnis betrifft
