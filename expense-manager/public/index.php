@@ -32,11 +32,6 @@ use Utils\Path;
 Session::start();
 $session = Session::getInstance();
 
-// Test-Login (nur temporär für Entwicklung)
-if (!$session->isLoggedIn()) {
-    $session->setUser(1, 'admin@example.com', 'Administrator');
-}
-
 // Datenbank initialisieren
 $db = new PDO('sqlite:' . __DIR__ . '/../database/database.sqlite');
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
