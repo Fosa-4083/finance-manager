@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# Wenn die Anfrage nicht direkt an eine Datei oder ein Verzeichnis geht
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Und wenn die Anfrage nicht bereits mit /expense-manager beginnt
+RewriteCond %{REQUEST_URI} !^/expense-manager
+
+# Dann leite zur expense-manager Anwendung weiter
+RewriteRule ^(.*)$ /expense-manager/$1 [L,QSA]
+
+# Alternativ können Sie auch alle Anfragen direkt umleiten:
+# RewriteRule ^$ /expense-manager/ [L,R=301] 
