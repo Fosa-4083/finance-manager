@@ -6,10 +6,18 @@ require_once __DIR__ . '/config/config.php';
 
 // Klassen laden
 require_once __DIR__ . '/src/Models/Expense.php';
+require_once __DIR__ . '/src/Models/Project.php';
+require_once __DIR__ . '/src/Models/User.php';
+require_once __DIR__ . '/src/Models/Category.php';
 require_once __DIR__ . '/src/Controllers/ExpenseController.php';
 require_once __DIR__ . '/src/Utils/Path.php';
+require_once __DIR__ . '/src/Utils/Session.php';
 
 use Utils\Path;
+use Utils\Session;
+
+// Session starten
+Session::start();
 
 // Ausgabe für Debugging
 header('Content-Type: text/html; charset=utf-8');
@@ -26,7 +34,14 @@ try {
 }
 
 // ExpenseController initialisieren
-$controller = new Controllers\ExpenseController($db);
+try {
+    $controller = new Controllers\ExpenseController($db);
+    echo "<p>ExpenseController erfolgreich initialisiert.</p>";
+} catch (Exception $e) {
+    echo "<p>Fehler beim Initialisieren des ExpenseControllers: " . $e->getMessage() . "</p>";
+    echo "<pre>" . $e->getTraceAsString() . "</pre>";
+    // Trotzdem fortfahren mit den anderen Tests
+}
 
 // Test für Beschreibungsvorschläge
 echo "<h2>Test für Beschreibungsvorschläge</h2>";
@@ -103,5 +118,23 @@ foreach ($columns as $column) {
     echo "<li>" . htmlspecialchars($column['name']) . " (" . htmlspecialchars($column['type']) . ")</li>";
 }
 echo "</ul>";
+
+// Manuelle Vorschlagsabfrage für getSuggestions API
+echo "<h2>Direkter Test der getSuggestions-API</h2>";
+echo "<p>Hier testen wir direkt, wie die API-Antwort aussehen würde:</p>";
+
+// HTTP-Headers für JSON-Ausgabe
+echo "<h3>Beispielantwort für Beschreibungsvorschläge</h3>";
+echo "<pre>";
+$query = 'a'; // Ein einfacher kurzer Begriff, der wahrscheinlich Treffer liefert
+$sql = "SELECT DISTINCT description, value, category_id FROM expenses WHERE description LIKE ? ORDER BY date DESC LIMIT 8";
+$stmt = $db->prepare($sql);
+$stmt->execute(['%' . $query . '%']);
+$suggestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($suggestions, JSON_PRETTY_PRINT);
+echo "</pre>";
+
+// Link zum Direkt-Testen der API (für Fehlersuche im Browser)
+echo "<p><a href='public/index.php?url=/expenses/suggestions&field=description&query=a' target='_blank'>API direkt testen (für description)</a></p>";
 
 echo "<p><a href='public/index.php'>Zurück zur Anwendung</a></p>"; 

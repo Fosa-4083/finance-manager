@@ -10,10 +10,18 @@ class ExpenseController {
     private $db;
     private $project;
 
-    public function __construct() {
-        $this->db = new PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $this->project = new Project();
+    public function __construct($db = null) {
+        if ($db) {
+            // Nutze die übergebene Datenbankverbindung
+            $this->db = $db;
+        } else {
+            // Erstelle eine neue Datenbankverbindung (für Abwärtskompatibilität)
+            $this->db = new PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
+            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        }
+        
+        // Project-Modell initialisieren
+        $this->project = new Project($this->db);
     }
 
     public function index() {

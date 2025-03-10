@@ -12,9 +12,15 @@ class Project {
     public $budget;
     public $status;
 
-    public function __construct() {
-        $this->db = new \PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
-        $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    public function __construct($db = null) {
+        if ($db) {
+            // Nutze die übergebene Datenbankverbindung
+            $this->db = $db;
+        } else {
+            // Erstelle eine neue Datenbankverbindung (für Abwärtskompatibilität)
+            $this->db = new \PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
+            $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        }
     }
 
     public function save() {
