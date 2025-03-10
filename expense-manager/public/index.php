@@ -1,4 +1,6 @@
 <?php
+// Testausgabe, um zu überprüfen, ob diese Datei geladen wird
+echo "<!-- public/index.php wurde am " . date('Y-m-d H:i:s') . " aktualisiert -->";
 
 // Konfiguration laden
 require_once __DIR__ . '/../config/config.php';
