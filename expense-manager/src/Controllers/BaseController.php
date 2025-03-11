@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Utils\Database;
+use Utils\Session;
 use PDO;
 
 /**
@@ -13,6 +14,11 @@ abstract class BaseController {
      * Datenbankverbindung
      */
     protected PDO $db;
+    
+    /**
+     * Session-Instanz
+     */
+    protected $session;
 
     /**
      * Konstruktor
@@ -27,5 +33,8 @@ abstract class BaseController {
             // Erstelle eine neue Datenbankverbindung
             $this->db = new Database();
         }
+        
+        // Session-Instanz initialisieren
+        $this->session = Session::getInstance();
     }
 } 
