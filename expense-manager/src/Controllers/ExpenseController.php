@@ -238,6 +238,11 @@ class ExpenseController extends BaseController {
             $total_sql .= ' AND e.description LIKE :description_search';
         }
         
+        // Benutzerfilter auch für die Gesamtsummen-Abfrage hinzufügen
+        if ($userId) {
+            $total_sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+        }
+        
         if ($min_amount !== null) {
             $total_sql .= ' AND ABS(e.value) >= :min_amount';
         }
