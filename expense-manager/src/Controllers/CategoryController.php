@@ -15,8 +15,23 @@ class CategoryController extends BaseController {
         ini_set('display_errors', 1);
         
         try {
+            // Benutzer-ID aus der Session holen
+            $userId = $this->session->getUserId();
+            
             // Hole Kategorien aus der Datenbank
-            $stmt = $this->db->query('SELECT * FROM categories ORDER BY type, name');
+            $sql = 'SELECT * FROM categories WHERE 1=1';
+            $params = [];
+            
+            // Nur Kategorien des angemeldeten Benutzers oder ohne Benutzer-ID anzeigen
+            if ($userId) {
+                $sql .= ' AND (user_id = ? OR user_id IS NULL)';
+                $params[] = $userId;
+            }
+            
+            $sql .= ' ORDER BY type, name';
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
             $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             // Gruppiere Kategorien nach Typ
@@ -70,8 +85,11 @@ class CategoryController extends BaseController {
             exit;
         }
 
-        $stmt = $this->db->prepare('INSERT INTO categories (name, color, type, description) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$name, $color, $type, $description]);
+        // Benutzer-ID aus der Session holen
+        $userId = $this->session->getUserId();
+
+        $stmt = $this->db->prepare('INSERT INTO categories (name, color, type, description, user_id) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$name, $color, $type, $description, $userId]);
         
         $_SESSION['success'] = 'Kategorie erfolgreich erstellt.';
         header('Location: ' . \Utils\Path::url('/categories'));

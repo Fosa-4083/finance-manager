@@ -107,16 +107,52 @@ class ExpenseGoalController extends BaseController {
     }
 
     public function store() {
-        $category_id = $_POST['category_id'];
-        $year = $_POST['year'];
-        $goal = $_POST['goal'];
-        
-        $stmt = $this->db->prepare('INSERT INTO expense_goals (category_id, year, goal) VALUES (?, ?, ?)');
-        $stmt->execute([$category_id, $year, $goal]);
-        
-        $_SESSION['success'] = 'Ausgabenziel erfolgreich erstellt.';
-        header('Location: ' . \Utils\Path::url('/expense-goals'));
-        exit;
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $category_id = $_POST['category_id'] ?? null;
+            $year = $_POST['year'] ?? date('Y');
+            $goal = $_POST['goal'] ?? 0;
+            
+            if (!$category_id) {
+                $_SESSION['error'] = 'Bitte wählen Sie eine Kategorie aus.';
+                header('Location: ' . \Utils\Path::url('/expense-goals'));
+                exit;
+            }
+            
+            // Benutzer-ID aus der Session holen
+            $userId = $this->session->getUserId();
+            
+            // Prüfen, ob bereits ein Ziel für diese Kategorie und dieses Jahr existiert
+            $stmt = $this->db->prepare('
+                SELECT id FROM expense_goals 
+                WHERE category_id = ? AND year = ? AND (user_id = ? OR user_id IS NULL)
+            ');
+            $stmt->execute([$category_id, $year, $userId]);
+            $existingGoal = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($existingGoal) {
+                // Update des bestehenden Ziels
+                $stmt = $this->db->prepare('
+                    UPDATE expense_goals 
+                    SET goal = ? 
+                    WHERE id = ?
+                ');
+                $stmt->execute([$goal, $existingGoal['id']]);
+                
+                $_SESSION['success'] = 'Ausgabenziel erfolgreich aktualisiert.';
+            } else {
+                // Neues Ziel erstellen
+                $stmt = $this->db->prepare('
+                    INSERT INTO expense_goals (category_id, year, goal, user_id) 
+                    VALUES (?, ?, ?, ?)
+                ');
+                $stmt->execute([$category_id, $year, $goal, $userId]);
+                
+                $_SESSION['success'] = 'Ausgabenziel erfolgreich erstellt.';
+            }
+            
+            header('Location: ' . \Utils\Path::url('/expense-goals?year=' . $year));
+            exit;
+        }
     }
 
     public function edit() {

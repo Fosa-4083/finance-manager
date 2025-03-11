@@ -23,6 +23,12 @@ class Project extends BaseModel {
             // Sicherstellen, dass das Budget eine Zahl ist
             $this->budget = is_numeric($this->budget) ? (float)$this->budget : 0;
             
+            // Benutzer-ID aus der Session holen
+            $userId = null;
+            if (isset($_SESSION['user_id'])) {
+                $userId = $_SESSION['user_id'];
+            }
+            
             if ($this->id) {
                 // Update
                 $stmt = $this->db->prepare('
@@ -43,8 +49,8 @@ class Project extends BaseModel {
             } else {
                 // Insert
                 $stmt = $this->db->prepare('
-                    INSERT INTO projects (name, description, start_date, end_date, budget, status) 
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO projects (name, description, start_date, end_date, budget, status, user_id) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 ');
                 
                 $result = $stmt->execute([
@@ -53,7 +59,8 @@ class Project extends BaseModel {
                     $this->start_date,
                     $this->end_date,
                     $this->budget,
-                    $this->status ?: 'aktiv'
+                    $this->status ?: 'aktiv',
+                    $userId
                 ]);
                 
                 if ($result) {
@@ -101,9 +108,26 @@ class Project extends BaseModel {
 
     public function getAll() {
         try {
-            // Verwende DISTINCT, um sicherzustellen, dass jedes Projekt nur einmal geladen wird
-            // Sortiere nach ID, um eine konsistente Reihenfolge zu gewährleisten
-            $stmt = $this->db->query('SELECT * FROM projects ORDER BY id');
+            // Benutzer-ID aus der Session holen
+            $userId = null;
+            if (isset($_SESSION['user_id'])) {
+                $userId = $_SESSION['user_id'];
+            }
+            
+            // SQL-Abfrage mit Benutzerfilter
+            $sql = 'SELECT * FROM projects WHERE 1=1';
+            $params = [];
+            
+            // Nur Projekte des angemeldeten Benutzers oder ohne Benutzer-ID anzeigen
+            if ($userId) {
+                $sql .= ' AND (user_id = ? OR user_id IS NULL)';
+                $params[] = $userId;
+            }
+            
+            $sql .= ' ORDER BY id';
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
             $projects = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
             // Debug-Ausgabe
@@ -132,7 +156,26 @@ class Project extends BaseModel {
 
     public function getActiveProjects() {
         try {
-            $stmt = $this->db->query('SELECT * FROM projects WHERE status = "aktiv" ORDER BY name');
+            // Benutzer-ID aus der Session holen
+            $userId = null;
+            if (isset($_SESSION['user_id'])) {
+                $userId = $_SESSION['user_id'];
+            }
+            
+            // SQL-Abfrage mit Benutzerfilter
+            $sql = 'SELECT * FROM projects WHERE status = "aktiv"';
+            $params = [];
+            
+            // Nur Projekte des angemeldeten Benutzers oder ohne Benutzer-ID anzeigen
+            if ($userId) {
+                $sql .= ' AND (user_id = ? OR user_id IS NULL)';
+                $params[] = $userId;
+            }
+            
+            $sql .= ' ORDER BY name';
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
             return $stmt->fetchAll(\PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
             return [];

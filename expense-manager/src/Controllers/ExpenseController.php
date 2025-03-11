@@ -93,6 +93,15 @@ class ExpenseController extends BaseController {
             $count_params[':end_date'] = $end_date;
         }
         
+        // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
+        $userId = $this->session->getUserId();
+        if ($userId) {
+            $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+            $count_sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+            $params[':user_id'] = $userId;
+            $count_params[':user_id'] = $userId;
+        }
+        
         // Kategorie-Filter hinzufügen, wenn ausgewählt
         if ($category_id) {
             $sql .= ' AND e.category_id = :category_id';
