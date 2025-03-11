@@ -151,6 +151,7 @@
                                 <label for="value" class="form-label">Betrag (€)</label>
                                 <div class="form-group">
                                     <input type="number" class="form-control" id="value" name="value" step="0.01" min="0.01" required>
+                                    <small id="valueHint" class="form-text text-muted">Betrag wird automatisch als Einnahme/Ausgabe gesetzt</small>
                                     <div id="valueSuggestions" class="suggestions-container"></div>
                                 </div>
                             </div>
@@ -188,7 +189,7 @@
             let currentSuggestionIndex = -1;
             let currentSuggestions = [];
 
-            // Kategoriebeschreibung anzeigen
+            // Funktion zur Aktualisierung des Typs (Einnahme/Ausgabe) basierend auf der ausgewählten Kategorie
             function updateCategoryDescription() {
                 const selectedOption = categorySelect.options[categorySelect.selectedIndex];
                 if (selectedOption && selectedOption.dataset.description) {
@@ -199,10 +200,17 @@
                 
                 // Automatisch den richtigen Typ (Einnahme/Ausgabe) basierend auf der Kategorie auswählen
                 if (selectedOption && selectedOption.dataset.type) {
-                    if (selectedOption.dataset.type === 'income') {
+                    const type = selectedOption.dataset.type;
+                    const valueHint = document.getElementById('valueHint');
+                    
+                    if (type === 'income') {
                         typeIncomeRadio.checked = true;
+                        valueHint.textContent = 'Betrag wird als Einnahme (positiv) gespeichert';
+                        valueHint.className = 'form-text text-success';
                     } else {
                         typeExpenseRadio.checked = true;
+                        valueHint.textContent = 'Betrag wird als Ausgabe (negativ) gespeichert';
+                        valueHint.className = 'form-text text-danger';
                     }
                 }
             }
@@ -364,6 +372,27 @@
             
             // Initialisierung
             updateCategoryDescription();
+
+            // Formular-Submit-Handler hinzufügen
+            document.querySelector('form').addEventListener('submit', function(e) {
+                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+                if (selectedOption && selectedOption.dataset.type) {
+                    const type = selectedOption.dataset.type;
+                    const value = parseFloat(valueInput.value);
+                    
+                    if (!isNaN(value)) {
+                        // Stelle sicher, dass der Betrag positiv ist
+                        const absValue = Math.abs(value);
+                        
+                        // Setze den Wert basierend auf dem Kategorietyp
+                        if (type === 'income') {
+                            valueInput.value = absValue; // Einnahmen sind positiv
+                        } else {
+                            valueInput.value = -absValue; // Ausgaben sind negativ
+                        }
+                    }
+                }
+            });
         });
     </script>
 </body>

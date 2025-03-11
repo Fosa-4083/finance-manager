@@ -122,6 +122,7 @@
                                 <div class="form-group">
                                     <input type="number" class="form-control" id="value" name="value" 
                                            step="0.01" min="0.01" value="<?= abs($expense['value']); ?>" required>
+                                    <small id="valueHint" class="form-text text-muted">Betrag wird automatisch als Einnahme/Ausgabe gesetzt</small>
                                     <div id="valueSuggestions" class="suggestions-container"></div>
                                 </div>
                             </div>
@@ -152,10 +153,25 @@
             const projectSelect = document.getElementById('project_id');
             const descriptionSuggestions = document.getElementById('descriptionSuggestions');
             const valueSuggestions = document.getElementById('valueSuggestions');
+            const typeExpenseRadio = document.getElementById('type_expense');
+            const typeIncomeRadio = document.getElementById('type_income');
+            const valueHint = document.getElementById('valueHint');
 
             let debounceTimer;
             let currentSuggestionIndex = -1;
             let currentSuggestions = [];
+            
+            // Funktion zur Aktualisierung des Typs (Einnahme/Ausgabe) basierend auf der ausgewählten Kategorie
+            function updateCategoryType() {
+                // Prüfen, welcher Radio-Button ausgewählt ist
+                if (typeIncomeRadio.checked) {
+                    valueHint.textContent = 'Betrag wird als Einnahme (positiv) gespeichert';
+                    valueHint.className = 'form-text text-success';
+                } else {
+                    valueHint.textContent = 'Betrag wird als Ausgabe (negativ) gespeichert';
+                    valueHint.className = 'form-text text-danger';
+                }
+            }
 
             // Funktion für Beschreibungsvorschläge
             function fetchDescriptionSuggestions() {
@@ -363,7 +379,33 @@
                 handleKeyNavigation(e, valueSuggestions);
             });
 
-            categorySelect.addEventListener('change', () => {
+            // Event-Listener für Kategorie-Änderungen
+            categorySelect.addEventListener('change', function() {
+                // Kategorie-Typ (Einnahme/Ausgabe) aus dem data-type Attribut der ausgewählten Option holen
+                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+                const categoryType = selectedOption.getAttribute('data-type');
+                
+                // Radio-Button basierend auf Kategorie-Typ setzen
+                if (categoryType === 'income') {
+                    typeIncomeRadio.checked = true;
+                } else {
+                    typeExpenseRadio.checked = true;
+                }
+                
+                // Hinweistext aktualisieren
+                updateCategoryType();
+                
+                // Vorschläge aktualisieren
+                if (descriptionInput.value.length >= 2) {
+                    fetchDescriptionSuggestions();
+                }
+                if (document.activeElement === valueInput) {
+                    fetchValueSuggestions();
+                }
+            });
+
+            // Event-Listener für Projekt-Änderungen
+            projectSelect.addEventListener('change', () => {
                 if (descriptionInput.value.trim().length >= 2) {
                     fetchDescriptionSuggestions();
                 }
@@ -372,13 +414,31 @@
                 }
             });
 
-            projectSelect.addEventListener('change', () => {
-                if (descriptionInput.value.trim().length >= 2) {
-                    fetchDescriptionSuggestions();
+            // Event-Listener für Radio-Button-Änderungen
+            typeIncomeRadio.addEventListener('change', updateCategoryType);
+            typeExpenseRadio.addEventListener('change', updateCategoryType);
+
+            // Initialen Zustand setzen
+            updateCategoryType();
+
+            // Event-Listener für Formular-Absendung
+            document.querySelector('form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Betrag als positiv oder negativ setzen basierend auf dem ausgewählten Typ
+                const amount = parseFloat(valueInput.value);
+                if (amount <= 0) {
+                    alert('Bitte geben Sie einen positiven Betrag ein.');
+                    return;
                 }
-                if (document.activeElement === valueInput) {
-                    fetchValueSuggestions();
+                
+                // Wenn Ausgabe ausgewählt ist, Betrag negativ machen
+                if (typeExpenseRadio.checked) {
+                    valueInput.value = -amount;
                 }
+                
+                // Formular absenden
+                this.submit();
             });
 
             // Klick außerhalb schließt Vorschläge
