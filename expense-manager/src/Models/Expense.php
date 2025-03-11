@@ -132,6 +132,27 @@ class Expense extends BaseModel {
         }
     }
 
+    /**
+     * Löscht eine Ausgabe aus der Datenbank
+     * 
+     * @return bool Gibt true zurück, wenn das Löschen erfolgreich war, sonst false
+     */
+    public function delete() {
+        try {
+            // Stellt sicher, dass eine ID vorhanden ist
+            if (!$this->id) {
+                error_log("Expense::delete - Fehler: Keine ID vorhanden");
+                return false;
+            }
+            
+            $stmt = $this->db->prepare('DELETE FROM expenses WHERE id = ?');
+            return $stmt->execute([$this->id]);
+        } catch (\PDOException $e) {
+            error_log("Expense::delete - PDOException: " . $e->getMessage());
+            return false;
+        }
+    }
+
     // Getter und Setter für die Eigenschaften
     public function getId() {
         return $this->id;
