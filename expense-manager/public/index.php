@@ -76,8 +76,6 @@ echo "<!-- Debug: Basispfad = " . htmlspecialchars($basePath) . ", Request URI =
 // Authentifizierungs-Routen (nur für Gäste)
 $router->addRoute('/login', 'Controllers\AuthController', 'showLoginForm', false, true);
 $router->addRoute('/login/process', 'Controllers\AuthController', 'login', false, true);
-$router->addRoute('/register', 'Controllers\AuthController', 'showRegisterForm', false, true);
-$router->addRoute('/register/process', 'Controllers\AuthController', 'register', false, true);
 $router->addRoute('/logout', 'Controllers\AuthController', 'logout', true);
 
 // Dashboard als Startseite (erfordert Authentifizierung)

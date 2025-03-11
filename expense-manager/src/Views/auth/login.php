@@ -40,7 +40,7 @@ $flash = $session->getAllFlash();
                     </form>
                 </div>
                 <div class="card-footer text-center">
-                    <p class="mb-0">Noch kein Konto? <a href="<?php echo \Utils\Path::url('/register'); ?>">Registrieren</a></p>
+                    <p class="mb-0">Bitte wenden Sie sich an den Administrator, um ein Konto zu erhalten.</p>
                 </div>
             </div>
         </div>
