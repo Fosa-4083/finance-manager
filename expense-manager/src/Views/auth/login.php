@@ -34,6 +34,11 @@ $flash = $session->getAllFlash();
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                         
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember_me" name="remember_me" value="1">
+                            <label class="form-check-label" for="remember_me">Angemeldet bleiben</label>
+                        </div>
+                        
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Anmelden</button>
                         </div>

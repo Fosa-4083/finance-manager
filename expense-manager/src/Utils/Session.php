@@ -56,10 +56,10 @@ class Session {
      * 
      * @param string $key Schlüssel
      * @param mixed $default Standardwert, falls Schlüssel nicht existiert
-     * @return mixed Wert oder Standardwert
+     * @return mixed
      */
     public function get($key, $default = null) {
-        return $this->data[$key] ?? $default;
+        return isset($this->data[$key]) ? $this->data[$key] : $default;
     }
 
     /**
@@ -81,18 +81,88 @@ class Session {
      * @param string $name Name des Benutzers
      */
     public function setUser($userId, $email, $name) {
-        $this->set('user', [
-            'id' => $userId,
-            'email' => $email,
-            'name' => $name
-        ]);
+        $this->set('user_id', $userId);
+        $this->set('user_email', $email);
+        $this->set('user_name', $name);
+        $this->set('logged_in', true);
     }
 
     /**
      * Benutzer aus der Session entfernen
      */
     public function clearUser() {
-        $this->remove('user');
+        $this->remove('user_id');
+        $this->remove('user_email');
+        $this->remove('user_name');
+        $this->remove('logged_in');
+        
+        // Auch das Remember-Me-Cookie löschen, falls vorhanden
+        $this->clearRememberMeCookie();
+    }
+    
+    /**
+     * Remember-Me-Cookie setzen
+     * 
+     * @param int $userId Benutzer-ID
+     * @param string $token Eindeutiger Token
+     * @param int $days Gültigkeitsdauer in Tagen
+     */
+    public function setRememberMeCookie($userId, $token, $days = 30) {
+        $expiry = time() + (86400 * $days); // 86400 = 1 Tag in Sekunden
+        $cookieValue = $userId . ':' . $token;
+        
+        // Cookie setzen
+        setcookie(
+            'remember_me',
+            $cookieValue,
+            [
+                'expires' => $expiry,
+                'path' => '/',
+                'domain' => '',
+                'secure' => isset($_SERVER['HTTPS']),
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]
+        );
+    }
+    
+    /**
+     * Remember-Me-Cookie löschen
+     */
+    public function clearRememberMeCookie() {
+        if (isset($_COOKIE['remember_me'])) {
+            // Cookie mit Vergangenheitsdatum setzen, um es zu löschen
+            setcookie(
+                'remember_me',
+                '',
+                [
+                    'expires' => time() - 3600,
+                    'path' => '/',
+                    'domain' => '',
+                    'secure' => isset($_SERVER['HTTPS']),
+                    'httponly' => true,
+                    'samesite' => 'Strict'
+                ]
+            );
+        }
+    }
+    
+    /**
+     * Remember-Me-Cookie auslesen
+     * 
+     * @return array|null Array mit user_id und token oder null, wenn kein Cookie vorhanden
+     */
+    public function getRememberMeCookie() {
+        if (isset($_COOKIE['remember_me'])) {
+            $parts = explode(':', $_COOKIE['remember_me']);
+            if (count($parts) === 2) {
+                return [
+                    'user_id' => $parts[0],
+                    'token' => $parts[1]
+                ];
+            }
+        }
+        return null;
     }
 
     /**
@@ -101,72 +171,88 @@ class Session {
      * @return bool
      */
     public function isLoggedIn() {
-        return $this->get('user') !== null;
+        return $this->get('logged_in', false);
     }
 
     /**
      * Angemeldeten Benutzer abrufen
      * 
-     * @return array|null Benutzerdaten oder null, wenn nicht angemeldet
+     * @return array|null
      */
     public function getUser() {
-        return $this->get('user');
+        if (!$this->isLoggedIn()) {
+            return null;
+        }
+        
+        return [
+            'id' => $this->get('user_id'),
+            'email' => $this->get('user_email'),
+            'name' => $this->get('user_name')
+        ];
     }
 
     /**
      * Benutzer-ID des angemeldeten Benutzers abrufen
      * 
-     * @return int|null Benutzer-ID oder null, wenn nicht angemeldet
+     * @return int|null
      */
     public function getUserId() {
-        $user = $this->getUser();
-        return $user ? $user['id'] : null;
+        return $this->get('user_id');
     }
 
     /**
-     * Session beenden
+     * Benutzer abmelden
      */
     public function logout() {
-        $this->remove('user');
-        session_destroy();
+        $this->clearUser();
+        
+        // Session-ID erneuern, um Session-Fixation zu verhindern
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
     }
 
     /**
-     * Flash-Message setzen (wird nur einmal angezeigt)
+     * Flash-Nachricht setzen
      * 
      * @param string $type Typ der Nachricht (success, error, warning, info)
-     * @param string $message Nachricht
+     * @param string $message Nachrichtentext
      */
     public function setFlash($type, $message) {
-        if (!isset($_SESSION['flash_next'])) {
-            $_SESSION['flash_next'] = [];
-        }
+        $this->flash[$type] = $message;
         $_SESSION['flash_next'][$type] = $message;
     }
 
     /**
-     * Flash-Messages abrufen und aus der Session entfernen
+     * Alle Flash-Nachrichten abrufen
      * 
-     * @return array Flash-Messages
+     * @return array
      */
     public function getAllFlash() {
-        return $this->flash;
+        $flash = $this->flash;
+        $this->flash = [];
+        return $flash;
     }
 
     /**
-     * Flash-Message abrufen
+     * Flash-Nachricht eines bestimmten Typs abrufen
      * 
-     * @param string $type Typ der Nachricht (success, error, warning, info)
-     * @return string|null Nachricht oder null, wenn keine Nachricht vorhanden ist
+     * @param string $type Typ der Nachricht
+     * @return string|null
      */
     public function getFlash($type) {
-        return $this->flash[$type] ?? null;
+        if (isset($this->flash[$type])) {
+            $message = $this->flash[$type];
+            unset($this->flash[$type]);
+            return $message;
+        }
+        return null;
     }
 
     /**
-     * Prüfen, ob ein Flash-Message vorhanden ist
+     * Prüfen, ob Flash-Nachricht eines bestimmten Typs existiert
      * 
-     * @param string $type Typ der Nachricht (success, error, warning, info)
+     * @param string $type Typ der Nachricht
      * @return bool
      */
     public function hasFlash($type) {
@@ -174,7 +260,7 @@ class Session {
     }
 
     /**
-     * Flash-Messages aus der Session entfernen
+     * Alle Flash-Nachrichten löschen
      */
     public function clearFlash() {
         $this->flash = [];
@@ -184,9 +270,9 @@ class Session {
     }
 
     /**
-     * CSRF-Token abrufen
+     * CSRF-Token generieren oder abrufen
      * 
-     * @return string CSRF-Token
+     * @return string
      */
     public function getCsrfToken() {
         if (!isset($_SESSION['csrf_token'])) {
@@ -199,7 +285,7 @@ class Session {
      * CSRF-Token validieren
      * 
      * @param string $token Zu validierender Token
-     * @return bool Token gültig
+     * @return bool
      */
     public function validateCsrfToken($token) {
         return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
