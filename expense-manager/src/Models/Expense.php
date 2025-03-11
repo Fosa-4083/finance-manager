@@ -28,6 +28,15 @@ class Expense extends BaseModel {
                     WHERE id = ?
                 ');
                 
+                error_log("Expense::save - Update-Query mit Parametern: " . 
+                          "category_id={$this->category_id}, " . 
+                          "project_id=" . ($this->project_id ?? 'NULL') . ", " . 
+                          "date={$this->date}, " . 
+                          "description={$this->description}, " . 
+                          "value={$this->value}, " . 
+                          "afa=" . ($this->afa ? 1 : 0) . ", " . 
+                          "id={$this->id}");
+                
                 return $stmt->execute([
                     $this->category_id,
                     $this->project_id,
@@ -40,9 +49,24 @@ class Expense extends BaseModel {
             } else {
                 // Insert
                 $stmt = $this->db->prepare('
-                    INSERT INTO expenses (category_id, project_id, date, description, value, afa) 
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO expenses (category_id, project_id, date, description, value, afa, user_id) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 ');
+                
+                // Benutzer-ID aus der Session holen
+                $userId = null;
+                if (isset($_SESSION['user_id'])) {
+                    $userId = $_SESSION['user_id'];
+                }
+                
+                error_log("Expense::save - Insert-Query mit Parametern: " . 
+                          "category_id={$this->category_id}, " . 
+                          "project_id=" . ($this->project_id ?? 'NULL') . ", " . 
+                          "date={$this->date}, " . 
+                          "description={$this->description}, " . 
+                          "value={$this->value}, " . 
+                          "afa=" . ($this->afa ? 1 : 0) . ", " . 
+                          "user_id=" . ($userId ?? 'NULL'));
                 
                 $result = $stmt->execute([
                     $this->category_id,
@@ -50,16 +74,21 @@ class Expense extends BaseModel {
                     $this->date,
                     $this->description,
                     $this->value,
-                    $this->afa ? 1 : 0
+                    $this->afa ? 1 : 0,
+                    $userId
                 ]);
                 
                 if ($result) {
                     $this->id = $this->db->lastInsertId();
+                    error_log("Expense::save - Insert erfolgreich, neue ID: {$this->id}");
+                } else {
+                    error_log("Expense::save - Insert fehlgeschlagen");
                 }
                 
                 return $result;
             }
         } catch (\PDOException $e) {
+            error_log("Expense::save - PDOException: " . $e->getMessage());
             return false;
         }
     }

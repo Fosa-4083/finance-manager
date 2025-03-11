@@ -278,48 +278,70 @@ class ExpenseController extends BaseController {
 
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $expense = new Expense();
-            $expense->category_id = $_POST['category_id'] ?? null;
-            $expense->project_id = $_POST['project_id'] ?? null;
-            $expense->date = $_POST['date'] ?? null;
-            $expense->description = $_POST['description'] ?? '';
-            $value = $_POST['value'] ?? 0;
-            $type = $_POST['type'] ?? 'expense';
+            // Debug-Ausgabe
+            error_log("ExpenseController::store - POST-Daten: " . print_r($_POST, true));
             
-            // Wenn der Betrag positiv ist, aber der Typ "expense" ist, machen wir den Betrag negativ
-            if ($type === 'expense') {
-                $expense->value = -abs($value);
-            } else {
-                $expense->value = abs($value);
-            }
-            
-            $expense->afa = isset($_POST['afa']) ? 1 : 0;  // Lohnsteuerausgleich-relevante Ausgabe
-            
-            // Validierung
-            if (empty($expense->category_id)) {
-                $_SESSION['error'] = 'Bitte wählen Sie eine Kategorie aus.';
-                header('Location: ' . \Utils\Path::url('/expenses/create'));
-                exit;
-            }
-            
-            if (empty($expense->date)) {
-                $_SESSION['error'] = 'Bitte geben Sie ein Datum ein.';
-                header('Location: ' . \Utils\Path::url('/expenses/create'));
-                exit;
-            }
-            
-            if (!is_numeric($value) || $value == 0) {
-                $_SESSION['error'] = 'Bitte geben Sie einen gültigen Betrag ein.';
-                header('Location: ' . \Utils\Path::url('/expenses/create'));
-                exit;
-            }
-            
-            if ($expense->save()) {
-                $_SESSION['success'] = 'Buchung erfolgreich gespeichert.';
-                header('Location: ' . \Utils\Path::url('/expenses'));
-                exit;
-            } else {
-                $_SESSION['error'] = 'Fehler beim Speichern der Buchung.';
+            try {
+                $expense = new Expense();
+                $expense->category_id = $_POST['category_id'] ?? null;
+                $expense->project_id = $_POST['project_id'] ?? null;
+                $expense->date = $_POST['date'] ?? null;
+                $expense->description = $_POST['description'] ?? '';
+                $value = $_POST['value'] ?? 0;
+                $type = $_POST['type'] ?? 'expense';
+                
+                // Debug-Ausgabe
+                error_log("ExpenseController::store - Verarbeitete Daten: category_id={$expense->category_id}, project_id={$expense->project_id}, date={$expense->date}, description={$expense->description}, value={$value}, type={$type}");
+                
+                // Wenn der Betrag positiv ist, aber der Typ "expense" ist, machen wir den Betrag negativ
+                if ($type === 'expense') {
+                    $expense->value = -abs($value);
+                } else {
+                    $expense->value = abs($value);
+                }
+                
+                $expense->afa = isset($_POST['afa']) ? 1 : 0;  // Lohnsteuerausgleich-relevante Ausgabe
+                
+                // Validierung
+                if (empty($expense->category_id)) {
+                    $_SESSION['error'] = 'Bitte wählen Sie eine Kategorie aus.';
+                    error_log("ExpenseController::store - Fehler: Keine Kategorie ausgewählt");
+                    header('Location: ' . \Utils\Path::url('/expenses/create'));
+                    exit;
+                }
+                
+                if (empty($expense->date)) {
+                    $_SESSION['error'] = 'Bitte geben Sie ein Datum ein.';
+                    error_log("ExpenseController::store - Fehler: Kein Datum angegeben");
+                    header('Location: ' . \Utils\Path::url('/expenses/create'));
+                    exit;
+                }
+                
+                if (!is_numeric($value) || $value == 0) {
+                    $_SESSION['error'] = 'Bitte geben Sie einen gültigen Betrag ein.';
+                    error_log("ExpenseController::store - Fehler: Ungültiger Betrag: {$value}");
+                    header('Location: ' . \Utils\Path::url('/expenses/create'));
+                    exit;
+                }
+                
+                // Debug-Ausgabe vor dem Speichern
+                error_log("ExpenseController::store - Vor dem Speichern: " . print_r($expense, true));
+                
+                if ($expense->save()) {
+                    $_SESSION['success'] = 'Buchung erfolgreich gespeichert.';
+                    error_log("ExpenseController::store - Erfolg: Buchung gespeichert mit ID {$expense->id}");
+                    header('Location: ' . \Utils\Path::url('/expenses'));
+                    exit;
+                } else {
+                    $_SESSION['error'] = 'Fehler beim Speichern der Buchung.';
+                    error_log("ExpenseController::store - Fehler: Speichern fehlgeschlagen");
+                    header('Location: ' . \Utils\Path::url('/expenses/create'));
+                    exit;
+                }
+            } catch (\Exception $e) {
+                // Fehler protokollieren
+                error_log("ExpenseController::store - Exception: " . $e->getMessage());
+                $_SESSION['error'] = 'Ein unerwarteter Fehler ist aufgetreten: ' . $e->getMessage();
                 header('Location: ' . \Utils\Path::url('/expenses/create'));
                 exit;
             }
