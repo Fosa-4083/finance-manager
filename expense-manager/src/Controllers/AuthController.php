@@ -8,7 +8,7 @@ use PDO;
 
 class AuthController extends BaseController {
     private $user;
-    private $session;
+    protected $session;
 
     public function __construct($db = null) {
         // Basisklassen-Konstruktor aufrufen
