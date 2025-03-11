@@ -147,6 +147,7 @@
                         <label for="quick_value" class="form-label">Betrag (€)</label>
                         <div class="position-relative">
                             <input type="number" class="form-control" id="quick_value" name="value" step="0.01" min="0.01" required>
+                            <small id="valueHint" class="form-text text-muted">Betrag wird automatisch als Einnahme/Ausgabe gesetzt</small>
                             <div id="valueSuggestions" class="suggestions-container"></div>
                         </div>
                     </div>
@@ -705,56 +706,40 @@
                 const categoryOption = categorySelect.options[categorySelect.selectedIndex];
                 if (categoryOption) {
                     const type = categoryOption.getAttribute('data-type');
-                    // Hier können Sie den Typ der Buchung setzen (falls nötig)
+                    const valueHint = document.getElementById('valueHint');
+                    
+                    // Aktualisiere den Hinweistext und die Farbe
+                    if (type === 'income') {
+                        valueHint.textContent = 'Betrag wird als Einnahme (positiv) gespeichert';
+                        valueHint.className = 'form-text text-success';
+                    } else {
+                        valueHint.textContent = 'Betrag wird als Ausgabe (negativ) gespeichert';
+                        valueHint.className = 'form-text text-danger';
+                    }
                 }
             }
 
-            // Tastaturnavigation für Vorschläge
-            function handleKeyNavigation(e, suggestionContainer) {
-                const suggestionItems = suggestionContainer.querySelectorAll('.suggestion-item');
-                
-                if (!suggestionItems.length || suggestionContainer.style.display === 'none') {
-                    return;
-                }
-                
-                // Pfeil nach unten
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    currentSuggestionIndex = Math.min(currentSuggestionIndex + 1, suggestionItems.length - 1);
-                    highlightSuggestion(suggestionItems);
-                }
-                
-                // Pfeil nach oben
-                else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    currentSuggestionIndex = Math.max(currentSuggestionIndex - 1, 0);
-                    highlightSuggestion(suggestionItems);
-                }
-                
-                // Enter-Taste
-                else if (e.key === 'Enter' && currentSuggestionIndex >= 0) {
-                    e.preventDefault();
-                    suggestionItems[currentSuggestionIndex].click();
-                }
-                
-                // Escape-Taste
-                else if (e.key === 'Escape') {
-                    suggestionContainer.style.display = 'none';
-                    currentSuggestionIndex = -1;
-                }
-            }
-            
-            // Markiert den ausgewählten Vorschlag
-            function highlightSuggestion(items) {
-                items.forEach((item, index) => {
-                    if (index === currentSuggestionIndex) {
-                        item.classList.add('bg-primary', 'text-white');
-                        item.scrollIntoView({ block: 'nearest' });
-                    } else {
-                        item.classList.remove('bg-primary', 'text-white');
+            // Funktion zum Anpassen des Betrags vor dem Absenden des Formulars
+            document.querySelector('form').addEventListener('submit', function(e) {
+                const categoryOption = categorySelect.options[categorySelect.selectedIndex];
+                if (categoryOption) {
+                    const type = categoryOption.getAttribute('data-type');
+                    const valueInput = document.getElementById('quick_value');
+                    const value = parseFloat(valueInput.value);
+                    
+                    if (!isNaN(value)) {
+                        // Stelle sicher, dass der Betrag positiv ist
+                        const absValue = Math.abs(value);
+                        
+                        // Setze den Wert basierend auf dem Kategorietyp
+                        if (type === 'income') {
+                            valueInput.value = absValue; // Einnahmen sind positiv
+                        } else {
+                            valueInput.value = -absValue; // Ausgaben sind negativ
+                        }
                     }
-                });
-            }
+                }
+            });
 
             // Event-Listener für Beschreibungseingabe
             descriptionInput.addEventListener('input', function() {
