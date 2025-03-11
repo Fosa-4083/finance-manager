@@ -93,6 +93,22 @@ class Expense extends BaseModel {
         }
     }
 
+    /**
+     * Aktualisiert eine bestehende Ausgabe
+     * 
+     * @return bool Gibt true zurück, wenn die Aktualisierung erfolgreich war, sonst false
+     */
+    public function update() {
+        // Stellt sicher, dass eine ID vorhanden ist
+        if (!$this->id) {
+            error_log("Expense::update - Fehler: Keine ID vorhanden");
+            return false;
+        }
+        
+        // Ruft die save()-Methode auf, die das Update durchführt
+        return $this->save();
+    }
+
     public function findById($id) {
         try {
             $stmt = $this->db->prepare('SELECT * FROM expenses WHERE id = ?');
