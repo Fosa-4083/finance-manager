@@ -4,22 +4,10 @@ namespace Controllers;
 
 use PDO;
 
-class CategoryController {
-    private $db;
-
-    public function __construct() {
-        try {
-            echo "<!-- Debug: Versuche Datenbankverbindung aufzubauen -->\n";
-            $dbPath = __DIR__ . '/../../database/database.sqlite';
-            echo "<!-- Debug: Datenbank-Pfad: " . $dbPath . " -->\n";
-            $this->db = new PDO('sqlite:' . $dbPath);
-            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            echo "<!-- Debug: Datenbankverbindung erfolgreich -->\n";
-        } catch (\PDOException $e) {
-            echo "<div class='alert alert-danger'>";
-            echo "Datenbankfehler: " . $e->getMessage();
-            echo "</div>";
-        }
+class CategoryController extends BaseController {
+    public function __construct($db = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
     }
 
     public function index() {

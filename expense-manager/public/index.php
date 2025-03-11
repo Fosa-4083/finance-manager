@@ -5,23 +5,29 @@ echo "<!-- public/index.php wurde am " . date('Y-m-d H:i:s') . " aktualisiert --
 // Konfiguration laden
 require_once __DIR__ . '/../config/config.php';
 
+// Basisklassen laden
+require_once __DIR__ . '/../src/Utils/Database.php';
+require_once __DIR__ . '/../src/Models/BaseModel.php';
+require_once __DIR__ . '/../src/Controllers/BaseController.php';
+
 // Klassen laden
 require_once __DIR__ . '/../src/Router.php';
 require_once __DIR__ . '/../src/Models/Expense.php';
 require_once __DIR__ . '/../src/Models/Project.php';
 require_once __DIR__ . '/../src/Models/User.php';
+require_once __DIR__ . '/../src/Models/Category.php';
+require_once __DIR__ . '/../src/Models/ExpenseGoal.php';
 require_once __DIR__ . '/../src/Controllers/CategoryController.php';
 require_once __DIR__ . '/../src/Controllers/ExpenseController.php';
 require_once __DIR__ . '/../src/Controllers/ExpenseGoalController.php';
 require_once __DIR__ . '/../src/Controllers/DashboardController.php';
 require_once __DIR__ . '/../src/Controllers/ProjectController.php';
 require_once __DIR__ . '/../src/Controllers/AuthController.php';
+require_once __DIR__ . '/../src/Controllers/UserController.php';
+require_once __DIR__ . '/../src/Controllers/AdminController.php';
 require_once __DIR__ . '/../src/Utils/Session.php';
 require_once __DIR__ . '/../src/Utils/Path.php';
 require_once __DIR__ . '/../src/Utils/Backup.php';
-require_once __DIR__ . '/../src/Utils/Database.php';
-require_once __DIR__ . '/../src/Controllers/AdminController.php';
-require_once __DIR__ . '/../src/Controllers/UserController.php';
 
 use Controllers\CategoryController;
 use Controllers\ExpenseController;
@@ -39,14 +45,15 @@ use Utils\Database;
 Session::start();
 $session = Session::getInstance();
 
-// Datenbank initialisieren mit automatischer Backup-Funktion
-$dsn = 'sqlite:' . __DIR__ . '/../database/database.sqlite';
-$db = new Database($dsn);
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-// Log-Information für Backups
-$backupInfo = "<!-- Backup-System aktiviert. Backups werden vor der ersten schreibenden Transaktion des Tages erstellt. -->";
-echo $backupInfo;
+// Datenbank initialisieren
+try {
+    $db = new Database();
+    $dbInfo = "<!-- MariaDB-Verbindung hergestellt. Datenbank: " . $db->getDbName() . " -->";
+    echo $dbInfo;
+} catch (\PDOException $e) {
+    echo "<!-- Datenbankfehler: " . htmlspecialchars($e->getMessage()) . " -->";
+    die("Datenbankverbindung konnte nicht hergestellt werden. Bitte überprüfen Sie die Konfiguration.");
+}
 
 $router = new Router($db);
 
@@ -59,9 +66,14 @@ if (preg_match('/^(\/[^\/]+)\//', $requestUri, $matches)) {
 $router->setBasePath($basePath);
 Path::setBasePath($basePath);
 
+// Debug-Ausgabe für den Basispfad
+echo "<!-- Debug: Basispfad = " . htmlspecialchars($basePath) . ", Request URI = " . htmlspecialchars($requestUri) . " -->";
+
 // Authentifizierungs-Routen (nur für Gäste)
 $router->addRoute('/login', 'Controllers\AuthController', 'showLoginForm', false, true);
 $router->addRoute('/login/process', 'Controllers\AuthController', 'login', false, true);
+$router->addRoute('/register', 'Controllers\AuthController', 'showRegisterForm', false, true);
+$router->addRoute('/register/process', 'Controllers\AuthController', 'register', false, true);
 $router->addRoute('/logout', 'Controllers\AuthController', 'logout', true);
 
 // Dashboard als Startseite (erfordert Authentifizierung)

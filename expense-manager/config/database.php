@@ -2,38 +2,44 @@
 /**
  * Datenbank-Konfiguration
  * 
- * Diese Datei definiert die Konfiguration für die Datenbankverbindung.
- * Sie ermöglicht eine flexible Konfiguration des Datenbankpfads.
+ * Diese Datei definiert die Konfiguration für die MariaDB/MySQL-Datenbankverbindung.
  */
 
-// Standard-Datenbankpfad relativ zum Projektverzeichnis
-$defaultPath = __DIR__ . '/../database/database.sqlite';
-
-// Server-Pfad für persistente Daten
-$serverPath = '/var/expense-manager/database/database.sqlite';
-
-// Umgebungsvariable für den Datenbankpfad
-$envPath = getenv('DB_PATH');
+// Standard-Konfiguration für MySQL/MariaDB
+$mysqlConfig = [
+    'host' => getenv('DB_HOST') ?: 'localhost',
+    'port' => getenv('DB_PORT') ?: '3306',
+    'database' => getenv('DB_NAME') ?: 'finance-manager',
+    'username' => getenv('DB_USER') ?: (function_exists('posix_getpwuid') ? posix_getpwuid(posix_geteuid())['name'] : get_current_user()),
+    'password' => getenv('DB_PASSWORD') ?: '',
+    'charset' => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci'
+];
 
 // .env-Datei prüfen (falls vorhanden)
 $envFile = '/var/expense-manager/.env';
 if (file_exists($envFile)) {
     $envContent = file_get_contents($envFile);
-    if (preg_match('/DB_PATH=(.+)/', $envContent, $matches)) {
-        $envPath = $matches[1];
+    
+    // MySQL/MariaDB-Konfiguration aus .env-Datei lesen
+    if (preg_match('/DB_HOST=(.+)/', $envContent, $matches)) {
+        $mysqlConfig['host'] = $matches[1];
+    }
+    if (preg_match('/DB_PORT=(.+)/', $envContent, $matches)) {
+        $mysqlConfig['port'] = $matches[1];
+    }
+    if (preg_match('/DB_NAME=(.+)/', $envContent, $matches)) {
+        $mysqlConfig['database'] = $matches[1];
+    }
+    if (preg_match('/DB_USER=(.+)/', $envContent, $matches)) {
+        $mysqlConfig['username'] = $matches[1];
+    }
+    if (preg_match('/DB_PASSWORD=(.+)/', $envContent, $matches)) {
+        $mysqlConfig['password'] = $matches[1];
     }
 }
 
-// Datenbankpfad bestimmen (Priorität: Umgebungsvariable > Server-Pfad > Standard-Pfad)
-$dbPath = $envPath ?: (file_exists($serverPath) ? $serverPath : $defaultPath);
-
-// Backup-Verzeichnis bestimmen
-$backupDir = dirname($dbPath) . '/backups';
-
 // Konfiguration zurückgeben
 return [
-    'path' => $dbPath,
-    'backup_dir' => $backupDir,
-    'default_path' => $defaultPath,
-    'server_path' => $serverPath
+    'mysql' => $mysqlConfig
 ]; 

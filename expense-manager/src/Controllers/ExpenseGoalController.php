@@ -5,12 +5,10 @@ namespace Controllers;
 use Models\ExpenseGoal;
 use PDO;
 
-class ExpenseGoalController {
-    private $db;
-
-    public function __construct() {
-        $this->db = new PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+class ExpenseGoalController extends BaseController {
+    public function __construct($db = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
     }
 
     public function index() {
@@ -35,18 +33,18 @@ class ExpenseGoalController {
                 c.name as category_name,
                 c.color,
                 COALESCE(SUM(CASE 
-                    WHEN strftime("%Y", e.date) = eg.year AND (eg.year < strftime("%Y", "now") OR (eg.year = strftime("%Y", "now") AND strftime("%j", e.date) <= strftime("%j", "now"))
+                    WHEN DATE_FORMAT(e.date, "%Y") = eg.year AND (eg.year < DATE_FORMAT(NOW(), "%Y") OR (eg.year = DATE_FORMAT(NOW(), "%Y") AND DAYOFYEAR(e.date) <= DAYOFYEAR(NOW()))
                     ) THEN e.value 
                     ELSE 0 
                 END), 0) as current_value,
                 COALESCE(SUM(CASE 
-                    WHEN strftime("%Y", e.date) = eg.year THEN e.value 
+                    WHEN DATE_FORMAT(e.date, "%Y") = eg.year THEN e.value 
                     ELSE 0 
                 END), 0) as total_value
             FROM expense_goals eg
             JOIN categories c ON eg.category_id = c.id
             LEFT JOIN expenses e ON e.category_id = c.id 
-                AND strftime("%Y", e.date) = eg.year
+                AND DATE_FORMAT(e.date, "%Y") = eg.year
         ';
         
         // Filter nach Jahr hinzufügen, wenn ausgewählt

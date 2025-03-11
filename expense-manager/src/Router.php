@@ -53,21 +53,26 @@ class Router {
     }
 
     /**
-     * Route verarbeiten
+     * Anfrage verarbeiten
      * 
      * @param string $uri Anfrage-URI
-     * @return mixed Ergebnis der Route-Verarbeitung
      */
     public function dispatch($uri) {
-        // Basispfad entfernen, wenn vorhanden
+        // Debug-Ausgabe
+        echo "<!-- Debug Router: URI = " . htmlspecialchars($uri) . ", Basispfad = " . htmlspecialchars($this->basePath) . " -->";
+        
+        // Basispfad aus URI entfernen, wenn vorhanden
         if (!empty($this->basePath) && strpos($uri, $this->basePath) === 0) {
             $uri = substr($uri, strlen($this->basePath));
         }
         
-        // Wenn der URI leer ist, setze ihn auf '/'
-        if (empty($uri)) {
-            $uri = '/';
+        // Sicherstellen, dass der Pfad mit einem Schrägstrich beginnt
+        if (empty($uri) || $uri[0] !== '/') {
+            $uri = '/' . $uri;
         }
+        
+        // Debug-Ausgabe nach Basispfad-Entfernung
+        echo "<!-- Debug Router: Bereinigter URI = " . htmlspecialchars($uri) . " -->";
         
         // URI-Parameter extrahieren (z.B. /projects/edit?id=1)
         $path = parse_url($uri, PHP_URL_PATH);

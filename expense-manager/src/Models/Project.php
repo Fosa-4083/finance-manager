@@ -2,8 +2,9 @@
 
 namespace Models;
 
-class Project {
-    private $db;
+use PDO;
+
+class Project extends BaseModel {
     public $id;
     public $name;
     public $description;
@@ -13,14 +14,8 @@ class Project {
     public $status;
 
     public function __construct($db = null) {
-        if ($db) {
-            // Nutze die übergebene Datenbankverbindung
-            $this->db = $db;
-        } else {
-            // Erstelle eine neue Datenbankverbindung (für Abwärtskompatibilität)
-            $this->db = new \PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
-            $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        }
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
     }
 
     public function save() {

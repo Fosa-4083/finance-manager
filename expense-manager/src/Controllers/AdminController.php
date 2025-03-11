@@ -4,18 +4,12 @@ namespace Controllers;
 
 use Utils\Database;
 use Utils\Path;
+use PDO;
 
-class AdminController {
-    private Database $db;
-    
-    public function __construct(Database $db = null) {
-        if ($db === null) {
-            $dbPath = __DIR__ . '/../../database/database.sqlite';
-            $this->db = new Database('sqlite:' . $dbPath);
-            $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        } else {
-            $this->db = $db;
-        }
+class AdminController extends BaseController {
+    public function __construct($db = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
     }
     
     /**

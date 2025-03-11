@@ -4,12 +4,10 @@ namespace Controllers;
 
 use PDO;
 
-class DashboardController {
-    private $db;
-
-    public function __construct() {
-        $this->db = new PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+class DashboardController extends BaseController {
+    public function __construct($db = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
     }
 
     public function index() {
@@ -21,7 +19,7 @@ class DashboardController {
                 COALESCE(SUM(CASE WHEN value > 0 THEN value ELSE 0 END), 0) as total_income,
                 COALESCE(SUM(value), 0) as balance
             FROM expenses 
-            WHERE strftime("%Y-%m", date) = ?
+            WHERE DATE_FORMAT(date, "%Y-%m") = ?
         ');
         $stmt->execute([$currentMonth]);
         $monthlyTotals = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -35,7 +33,7 @@ class DashboardController {
                 COALESCE(SUM(e.value), 0) as total,
                 COUNT(e.id) as count
             FROM categories c
-            LEFT JOIN expenses e ON c.id = e.category_id AND strftime("%Y-%m", e.date) = ?
+            LEFT JOIN expenses e ON c.id = e.category_id AND DATE_FORMAT(e.date, "%Y-%m") = ?
             GROUP BY c.id
             ORDER BY total ASC
         ');
@@ -64,7 +62,7 @@ class DashboardController {
                 c.color as category_color
             FROM expenses e
             JOIN categories c ON e.category_id = c.id
-            WHERE strftime("%Y-%m", e.date) = ? AND e.value < 0
+            WHERE DATE_FORMAT(e.date, "%Y-%m") = ? AND e.value < 0
             ORDER BY e.value ASC
             LIMIT 5
         ');
@@ -82,7 +80,7 @@ class DashboardController {
                     COALESCE(SUM(CASE WHEN value < 0 THEN value ELSE 0 END), 0) as expenses,
                     COALESCE(SUM(CASE WHEN value > 0 THEN value ELSE 0 END), 0) as income
                 FROM expenses 
-                WHERE strftime("%Y-%m", date) = ?
+                WHERE DATE_FORMAT(date, "%Y-%m") = ?
             ');
             $stmt->execute([$month]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -111,7 +109,7 @@ class DashboardController {
         $stmt = $this->db->prepare('
             SELECT COALESCE(SUM(CASE WHEN value < 0 THEN value ELSE 0 END), 0) as total_expenses
             FROM expenses 
-            WHERE strftime("%Y-%m", date) = ?
+            WHERE DATE_FORMAT(date, "%Y-%m") = ?
         ');
         $stmt->execute([$lastMonth]);
         $lastMonthTotal = $stmt->fetchColumn();
@@ -119,6 +117,6 @@ class DashboardController {
         // Stelle sicher, dass $lastMonthTotal nicht null ist
         $lastMonthTotal = $lastMonthTotal ?: 0;
 
-        include VIEW_PATH . 'dashboard/index.php';
+        include __DIR__ . '/../Views/dashboard/index.php';
     }
 } 

@@ -6,19 +6,12 @@ use Models\Expense;
 use Models\Project;
 use PDO;
 
-class ExpenseController {
-    private $db;
+class ExpenseController extends BaseController {
     private $project;
 
     public function __construct($db = null) {
-        if ($db) {
-            // Nutze die übergebene Datenbankverbindung
-            $this->db = $db;
-        } else {
-            // Erstelle eine neue Datenbankverbindung (für Abwärtskompatibilität)
-            $this->db = new PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
-            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        }
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
         
         // Project-Modell initialisieren
         $this->project = new Project($this->db);
@@ -80,15 +73,15 @@ class ExpenseController {
         
         // Zeitraum-Filter je nach Typ hinzufügen
         if ($period_type === 'month') {
-            $sql .= ' AND strftime("%m", e.date) = :month AND strftime("%Y", e.date) = :year';
-            $count_sql .= ' AND strftime("%m", e.date) = :month AND strftime("%Y", e.date) = :year';
+            $sql .= ' AND DATE_FORMAT(e.date, "%m") = :month AND DATE_FORMAT(e.date, "%Y") = :year';
+            $count_sql .= ' AND DATE_FORMAT(e.date, "%m") = :month AND DATE_FORMAT(e.date, "%Y") = :year';
             $params[':month'] = $month;
             $params[':year'] = $year;
             $count_params[':month'] = $month;
             $count_params[':year'] = $year;
         } elseif ($period_type === 'year') {
-            $sql .= ' AND strftime("%Y", e.date) = :year';
-            $count_sql .= ' AND strftime("%Y", e.date) = :year';
+            $sql .= ' AND DATE_FORMAT(e.date, "%Y") = :year';
+            $count_sql .= ' AND DATE_FORMAT(e.date, "%Y") = :year';
             $params[':year'] = $year;
             $count_params[':year'] = $year;
         } elseif ($period_type === 'custom') {
@@ -211,9 +204,9 @@ class ExpenseController {
         
         // Die gleichen Filter wie für die Hauptabfrage anwenden
         if ($period_type === 'month') {
-            $total_sql .= ' AND strftime("%m", e.date) = :month AND strftime("%Y", e.date) = :year';
+            $total_sql .= ' AND DATE_FORMAT(e.date, "%m") = :month AND DATE_FORMAT(e.date, "%Y") = :year';
         } elseif ($period_type === 'year') {
-            $total_sql .= ' AND strftime("%Y", e.date) = :year';
+            $total_sql .= ' AND DATE_FORMAT(e.date, "%Y") = :year';
         } elseif ($period_type === 'custom') {
             $total_sql .= ' AND e.date BETWEEN :start_date AND :end_date';
         }
@@ -253,7 +246,7 @@ class ExpenseController {
         $totalAllExpenses = $totals['total_expenses'] ?? 0;
         
         // Verfügbare Jahre für Filter
-        $stmt = $this->db->query('SELECT DISTINCT strftime("%Y", date) as year FROM expenses ORDER BY year DESC');
+        $stmt = $this->db->query('SELECT DISTINCT DATE_FORMAT(date, "%Y") as year FROM expenses ORDER BY year DESC');
         $years = $stmt->fetchAll(PDO::FETCH_COLUMN);
         
         // Wenn keine Jahre gefunden wurden, aktuelles Jahr hinzufügen

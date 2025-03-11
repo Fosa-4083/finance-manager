@@ -2,13 +2,19 @@
 
 namespace Models;
 
-class ExpenseGoal {
+use PDO;
+
+class ExpenseGoal extends BaseModel {
     private $id;
     private $category_id;
     private $year;
     private $goal;
 
-    public function __construct($category_id, $year, $goal) {
+    public function __construct($db = null, $category_id = null, $year = null, $goal = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
+        
+        // Eigenschaften setzen
         $this->category_id = $category_id;
         $this->year = $year;
         $this->goal = $goal;

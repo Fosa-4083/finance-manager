@@ -2,8 +2,9 @@
 
 namespace Models;
 
-class Expense {
-    private $db;
+use PDO;
+
+class Expense extends BaseModel {
     public $id;
     public $category_id;
     public $project_id;
@@ -12,9 +13,9 @@ class Expense {
     public $value;
     public $afa;
 
-    public function __construct() {
-        $this->db = new \PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
-        $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    public function __construct($db = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
     }
 
     public function save() {

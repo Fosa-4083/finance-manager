@@ -4,14 +4,19 @@ namespace Controllers;
 
 use Models\Project;
 use Models\Expense;
+use PDO;
 
-class ProjectController {
+class ProjectController extends BaseController {
     private $project;
     private $expense;
 
-    public function __construct() {
-        $this->project = new Project();
-        $this->expense = new Expense();
+    public function __construct($db = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
+        
+        // Modelle initialisieren
+        $this->project = new Project($this->db);
+        $this->expense = new Expense($this->db);
     }
 
     public function index() {

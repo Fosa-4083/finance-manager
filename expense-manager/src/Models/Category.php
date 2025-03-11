@@ -2,14 +2,20 @@
 
 namespace Models;
 
-class Category {
+use PDO;
+
+class Category extends BaseModel {
     private $id;
     private $name;
     private $description;
     private $color;
     private $goal;
 
-    public function __construct($name, $description = null, $color = null, $goal = null) {
+    public function __construct($db = null, $name = null, $description = null, $color = null, $goal = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
+        
+        // Eigenschaften setzen
         $this->name = $name;
         $this->description = $description;
         $this->color = $color;

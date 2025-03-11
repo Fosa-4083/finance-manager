@@ -4,15 +4,18 @@ namespace Controllers;
 
 use Models\User;
 use Utils\Session;
+use PDO;
 
-class AuthController {
-    private $db;
+class AuthController extends BaseController {
     private $user;
     private $session;
 
-    public function __construct($db) {
-        $this->db = $db;
-        $this->user = new User($db);
+    public function __construct($db = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
+        
+        // Modelle und Services initialisieren
+        $this->user = new User($this->db);
         $this->session = Session::getInstance();
     }
 

@@ -3,35 +3,34 @@
 namespace Utils;
 
 /**
- * Klasse zur Verwaltung von Datenbank-Backups
+ * Klasse für Datenbank-Backups
  */
 class Backup {
     /**
-     * Pfad zum Backup-Verzeichnis
+     * Pfad zur Datenbank
+     */
+    private string $dbPath;
+    
+    /**
+     * Verzeichnis für Backups
      */
     private string $backupDir;
     
     /**
-     * Name der Datenbank-Datei
-     */
-    private string $databaseFile;
-    
-    /**
-     * Maximale Anzahl der aufzubewahrenden Backups
-     */
-    private int $maxBackups;
-    
-    /**
      * Konstruktor
      * 
-     * @param string $databaseFile Pfad zur Datenbank-Datei
-     * @param string $backupDir Pfad zum Backup-Verzeichnis
-     * @param int $maxBackups Maximale Anzahl der aufzubewahrenden Backups
+     * @param string $dbPath Pfad zur Datenbank
+     * @param string|null $backupDir Verzeichnis für Backups (optional)
      */
-    public function __construct(string $databaseFile, string $backupDir = null, int $maxBackups = 30) {
-        $this->databaseFile = $databaseFile;
-        $this->backupDir = $backupDir ?? dirname($databaseFile) . '/backups';
-        $this->maxBackups = $maxBackups;
+    public function __construct(string $dbPath, ?string $backupDir = null) {
+        $this->dbPath = $dbPath;
+        
+        // Backup-Verzeichnis festlegen
+        if ($backupDir === null) {
+            $this->backupDir = dirname($dbPath) . '/backups';
+        } else {
+            $this->backupDir = $backupDir;
+        }
         
         // Backup-Verzeichnis erstellen, falls es nicht existiert
         if (!is_dir($this->backupDir)) {
@@ -40,135 +39,135 @@ class Backup {
     }
     
     /**
-     * Erstellt ein Backup der Datenbank, falls heute noch keines erstellt wurde
+     * Erstellt ein Backup mit dem aktuellen Datum und der Uhrzeit
      * 
-     * @return bool True, wenn ein Backup erstellt wurde, False, wenn heute bereits ein Backup existiert
+     * @return string Pfad zum erstellten Backup
+     */
+    public function createBackup(): string {
+        // Prüfen, ob die Datenbank existiert
+        if (!file_exists($this->dbPath)) {
+            throw new \Exception("Datenbank existiert nicht: {$this->dbPath}");
+        }
+        
+        // Backup-Dateiname generieren
+        $timestamp = date('Y-m-d_H-i-s');
+        $backupFile = $this->backupDir . '/backup_' . $timestamp . '.sqlite';
+        
+        // Backup erstellen
+        if (!copy($this->dbPath, $backupFile)) {
+            throw new \Exception("Backup konnte nicht erstellt werden: {$backupFile}");
+        }
+        
+        return $backupFile;
+    }
+    
+    /**
+     * Erstellt ein tägliches Backup, falls heute noch keines erstellt wurde
+     * 
+     * @return bool true, wenn ein Backup erstellt wurde, false sonst
      */
     public function createDailyBackup(): bool {
         $today = date('Y-m-d');
-        $backupFilename = $this->backupDir . '/database_' . $today . '.sqlite';
+        $pattern = $this->backupDir . '/backup_' . $today . '_*.sqlite';
         
         // Prüfen, ob heute bereits ein Backup erstellt wurde
-        if (file_exists($backupFilename)) {
+        if (count(glob($pattern)) > 0) {
             return false;
         }
         
         // Backup erstellen
-        if (!copy($this->databaseFile, $backupFilename)) {
-            throw new \Exception('Fehler beim Erstellen des Backups.');
-        }
-        
-        // Alte Backups aufräumen
-        $this->cleanupOldBackups();
-        
+        $this->createBackup();
         return true;
-    }
-    
-    /**
-     * Löscht alte Backups, wenn mehr als die maximale Anzahl vorhanden sind
-     */
-    private function cleanupOldBackups(): void {
-        $backups = glob($this->backupDir . '/database_*.sqlite');
-        
-        // Nach Datum sortieren (älteste zuerst)
-        usort($backups, function($a, $b) {
-            return filemtime($a) - filemtime($b);
-        });
-        
-        // Älteste Backups löschen, wenn mehr als $maxBackups vorhanden sind
-        $countToDelete = count($backups) - $this->maxBackups;
-        if ($countToDelete > 0) {
-            for ($i = 0; $i < $countToDelete; $i++) {
-                unlink($backups[$i]);
-            }
-        }
     }
     
     /**
      * Gibt eine Liste aller Backups zurück
      * 
-     * @return array Liste der Backup-Dateien mit Datum und Dateigröße
+     * @return array Liste der Backups mit Datum und Pfad
      */
-    public function listBackups(): array {
-        $backups = glob($this->backupDir . '/database_*.sqlite');
-        $result = [];
+    public function getBackups(): array {
+        $pattern = $this->backupDir . '/backup_*.sqlite';
+        $files = glob($pattern);
         
-        foreach ($backups as $backup) {
-            $filename = basename($backup);
-            $date = str_replace(['database_', '.sqlite'], '', $filename);
-            $result[] = [
-                'filename' => $filename,
-                'date' => $date,
-                'size' => $this->formatBytes(filesize($backup)),
-                'path' => $backup
-            ];
+        $backups = [];
+        foreach ($files as $file) {
+            $filename = basename($file);
+            // Datum aus dem Dateinamen extrahieren (Format: backup_YYYY-MM-DD_HH-II-SS.sqlite)
+            if (preg_match('/backup_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.sqlite/', $filename, $matches)) {
+                $date = str_replace('_', ' ', $matches[1]);
+                $date = str_replace('-', ':', $date, 2);
+                $backups[] = [
+                    'date' => $date,
+                    'path' => $file,
+                    'filename' => $filename
+                ];
+            }
         }
         
         // Nach Datum sortieren (neueste zuerst)
-        usort($result, function($a, $b) {
+        usort($backups, function($a, $b) {
             return strcmp($b['date'], $a['date']);
         });
         
-        return $result;
+        return $backups;
     }
     
     /**
      * Stellt ein Backup wieder her
      * 
-     * @param string $backupFile Pfad zur Backup-Datei
-     * @return bool True, wenn das Backup erfolgreich wiederhergestellt wurde
+     * @param string $backupFile Pfad zum Backup
+     * @return bool true bei Erfolg, false bei Fehler
      */
     public function restoreBackup(string $backupFile): bool {
-        // Vor der Wiederherstellung ein Sicherungs-Backup erstellen
-        $timestamp = date('Y-m-d_H-i-s');
-        $preRestoreBackup = $this->backupDir . '/pre_restore_' . $timestamp . '.sqlite';
+        // Prüfen, ob das Backup existiert
+        if (!file_exists($backupFile)) {
+            throw new \Exception("Backup existiert nicht: {$backupFile}");
+        }
         
-        if (!copy($this->databaseFile, $preRestoreBackup)) {
-            throw new \Exception('Fehler beim Erstellen des Sicherungs-Backups vor der Wiederherstellung.');
+        // Sicherheitsbackup erstellen
+        $timestamp = date('Y-m-d_H-i-s');
+        $safetyBackup = $this->backupDir . '/pre_restore_' . $timestamp . '.sqlite';
+        
+        if (file_exists($this->dbPath)) {
+            if (!copy($this->dbPath, $safetyBackup)) {
+                throw new \Exception("Sicherheitsbackup konnte nicht erstellt werden: {$safetyBackup}");
+            }
         }
         
         // Backup wiederherstellen
-        if (!copy($backupFile, $this->databaseFile)) {
-            throw new \Exception('Fehler beim Wiederherstellen des Backups.');
+        if (!copy($backupFile, $this->dbPath)) {
+            throw new \Exception("Backup konnte nicht wiederhergestellt werden: {$backupFile}");
         }
         
         return true;
     }
     
     /**
-     * Formatiert Bytes in menschenlesbare Größen
+     * Löscht ein Backup
      * 
-     * @param int $bytes Anzahl der Bytes
-     * @param int $precision Anzahl der Nachkommastellen
-     * @return string Formatierte Größe mit Einheit
+     * @param string $backupFile Pfad zum Backup
+     * @return bool true bei Erfolg, false bei Fehler
      */
-    private function formatBytes(int $bytes, int $precision = 2): string {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    public function deleteBackup(string $backupFile): bool {
+        // Prüfen, ob das Backup existiert
+        if (!file_exists($backupFile)) {
+            throw new \Exception("Backup existiert nicht: {$backupFile}");
+        }
         
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
+        // Backup löschen
+        if (!unlink($backupFile)) {
+            throw new \Exception("Backup konnte nicht gelöscht werden: {$backupFile}");
+        }
         
-        $bytes /= pow(1024, $pow);
-        
-        return round($bytes, $precision) . ' ' . $units[$pow];
+        return true;
     }
     
     /**
      * Gibt das Backup-Verzeichnis zurück
      * 
-     * @return string Pfad zum Backup-Verzeichnis
+     * @return string Backup-Verzeichnis
      */
     public function getBackupDir(): string {
         return $this->backupDir;
-    }
-    
-    /**
-     * Gibt die maximale Anzahl der aufzubewahrenden Backups zurück
-     * 
-     * @return int Maximale Anzahl der Backups
-     */
-    public function getMaxBackups(): int {
-        return $this->maxBackups;
     }
 } 

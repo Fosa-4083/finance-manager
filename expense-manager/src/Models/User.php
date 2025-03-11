@@ -4,8 +4,7 @@ namespace Models;
 
 use PDO;
 
-class User {
-    private $db;
+class User extends BaseModel {
     private $id;
     private $email;
     private $name;
@@ -14,8 +13,9 @@ class User {
     private $updated_at;
     private $last_login;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct($db = null) {
+        // Basisklassen-Konstruktor aufrufen
+        parent::__construct($db);
     }
 
     /**

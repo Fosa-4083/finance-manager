@@ -24,11 +24,6 @@ Thumbs.db
 *.tmp
 temp_upload/
 
-# Datenbank
-*.sqlite
-*.sqlite3
-*.db
-
 # Composer
 /vendor/
 composer.phar
@@ -64,4 +59,10 @@ yarn.lock
 # Backup-Dateien
 *~
 *.bak
-*.swp 
+*.swp
+
+# Datenbank-Dateien
+database/database.sqlite
+database/backups/
+*.sqlite
+*.db 
