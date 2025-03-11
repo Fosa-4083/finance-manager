@@ -61,6 +61,7 @@ class AuthController extends BaseController {
         // Formularfelder validieren
         $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
         $password = $_POST['password'] ?? '';
+        $remember_me = isset($_POST['remember_me']) && $_POST['remember_me'] == '1';
 
         if (!$email || empty($password)) {
             $this->session->setFlash('error', 'Bitte geben Sie eine gültige E-Mail-Adresse und ein Passwort ein.');
@@ -69,7 +70,7 @@ class AuthController extends BaseController {
         }
 
         // Debug-Ausgabe
-        error_log("Login-Versuch für E-Mail: " . $email);
+        error_log("Login-Versuch für E-Mail: " . $email . ", Remember Me: " . ($remember_me ? 'Ja' : 'Nein'));
         
         // Benutzer authentifizieren
         if ($this->user->authenticate($email, $password)) {
@@ -80,6 +81,20 @@ class AuthController extends BaseController {
                 $this->user->getEmail(),
                 $this->user->getName()
             );
+
+            // "Angemeldet bleiben" Cookie setzen, wenn gewünscht
+            if ($remember_me) {
+                // Zufälliges Token generieren
+                $token = bin2hex(random_bytes(32));
+                
+                // Token in der Datenbank speichern
+                $this->user->saveRememberToken($token);
+                
+                // Cookie setzen (30 Tage gültig)
+                $this->session->setRememberMeCookie($this->user->getId(), $token);
+                
+                error_log("Remember-Me-Cookie gesetzt für Benutzer ID: " . $this->user->getId());
+            }
 
             $this->session->setFlash('success', 'Sie wurden erfolgreich angemeldet.');
             header('Location: ' . \Utils\Path::url('/'));
@@ -160,6 +175,10 @@ class AuthController extends BaseController {
      * Benutzer abmelden
      */
     public function logout() {
+        // Remember-Me-Cookie löschen
+        $this->session->clearRememberMeCookie();
+        
+        // Session-Daten löschen
         $this->session->clearUser();
         $this->session->setFlash('success', 'Sie wurden erfolgreich abgemeldet.');
         header('Location: ' . \Utils\Path::url('/login'));

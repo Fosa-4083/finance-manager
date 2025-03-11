@@ -54,9 +54,41 @@ try {
     $db = new Database();
     $dbInfo = "<!-- MariaDB-Verbindung hergestellt. Datenbank: " . $db->getDbName() . " -->";
     echo $dbInfo;
+    
+    // Prüfen, ob der Benutzer bereits angemeldet ist
+    if (!$session->isLoggedIn()) {
+        // Prüfen, ob ein Remember-Me-Cookie vorhanden ist
+        $rememberCookie = $session->getRememberMeCookie();
+        if ($rememberCookie && isset($rememberCookie['user_id']) && isset($rememberCookie['token'])) {
+            // Benutzer anhand des Tokens suchen
+            $user = new Models\User($db);
+            if ($user->findByRememberToken($rememberCookie['user_id'], $rememberCookie['token'])) {
+                // Benutzer in der Session speichern
+                $session->setUser(
+                    $user->getId(),
+                    $user->getEmail(),
+                    $user->getName()
+                );
+                
+                // Token erneuern
+                $newToken = bin2hex(random_bytes(32));
+                $user->saveRememberToken($newToken);
+                $session->setRememberMeCookie($user->getId(), $newToken);
+                
+                echo "<!-- Benutzer wurde über Remember-Me-Cookie angemeldet: " . $user->getEmail() . " -->";
+            } else {
+                // Ungültiges Token, Cookie löschen
+                $session->clearRememberMeCookie();
+                echo "<!-- Ungültiges Remember-Me-Cookie wurde gelöscht -->";
+            }
+        }
+    }
 } catch (\PDOException $e) {
     echo "<!-- Datenbankfehler: " . htmlspecialchars($e->getMessage()) . " -->";
     die("Datenbankverbindung konnte nicht hergestellt werden. Bitte überprüfen Sie die Konfiguration.");
+} catch (\Exception $e) {
+    echo "<!-- Fehler: " . htmlspecialchars($e->getMessage()) . " -->";
+    // Fehler beim Verarbeiten des Remember-Me-Cookies sollte die Anwendung nicht blockieren
 }
 
 $router = new Router($db);

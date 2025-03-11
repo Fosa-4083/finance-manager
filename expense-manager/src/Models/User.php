@@ -312,4 +312,107 @@ class User extends BaseModel {
     public function getLastLogin() {
         return $this->last_login;
     }
+
+    /**
+     * Speichert ein Remember-Me-Token für den Benutzer
+     * 
+     * @param string $token Das zu speichernde Token
+     * @return bool Erfolg des Speichervorgangs
+     */
+    public function saveRememberToken($token) {
+        if (!$this->id) {
+            return false;
+        }
+        
+        try {
+            // Zuerst prüfen, ob bereits ein Token existiert
+            $stmt = $this->db->prepare("SELECT id FROM user_tokens WHERE user_id = :user_id AND type = 'remember_me'");
+            $stmt->bindParam(':user_id', $this->id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $tokenExists = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($tokenExists) {
+                // Token aktualisieren
+                $stmt = $this->db->prepare("
+                    UPDATE user_tokens 
+                    SET token = :token, expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY)
+                    WHERE user_id = :user_id AND type = 'remember_me'
+                ");
+            } else {
+                // Neues Token erstellen
+                $stmt = $this->db->prepare("
+                    INSERT INTO user_tokens (user_id, token, type, expires_at)
+                    VALUES (:user_id, :token, 'remember_me', DATE_ADD(NOW(), INTERVAL 30 DAY))
+                ");
+            }
+            
+            $stmt->bindParam(':user_id', $this->id, PDO::PARAM_INT);
+            $stmt->bindParam(':token', $token, PDO::PARAM_STR);
+            
+            return $stmt->execute();
+        } catch (\PDOException $e) {
+            error_log("Fehler beim Speichern des Remember-Tokens: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Benutzer anhand eines Remember-Me-Tokens finden
+     * 
+     * @param int $userId Benutzer-ID
+     * @param string $token Remember-Me-Token
+     * @return bool Erfolg des Ladevorgangs
+     */
+    public function findByRememberToken($userId, $token) {
+        try {
+            // Token in der Datenbank suchen
+            $stmt = $this->db->prepare("
+                SELECT u.* 
+                FROM users u
+                JOIN user_tokens t ON u.id = t.user_id
+                WHERE u.id = :user_id 
+                AND t.token = :token 
+                AND t.type = 'remember_me'
+                AND t.expires_at > NOW()
+            ");
+            
+            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':token', $token, PDO::PARAM_STR);
+            $stmt->execute();
+            
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                $this->setProperties($user);
+                
+                // Letzten Login aktualisieren
+                $this->updateLastLogin();
+                
+                return true;
+            }
+            
+            return false;
+        } catch (\PDOException $e) {
+            error_log("Fehler beim Suchen des Remember-Tokens: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Letzten Login-Zeitpunkt aktualisieren
+     */
+    private function updateLastLogin() {
+        if (!$this->id) {
+            return false;
+        }
+        
+        try {
+            $stmt = $this->db->prepare("UPDATE users SET last_login = NOW() WHERE id = :id");
+            $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (\PDOException $e) {
+            error_log("Fehler beim Aktualisieren des letzten Logins: " . $e->getMessage());
+            return false;
+        }
+    }
 } 
