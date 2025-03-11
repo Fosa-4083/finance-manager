@@ -47,6 +47,10 @@ $session = Session::getInstance();
 
 // Datenbank initialisieren
 try {
+    // Konfiguration laden und anzeigen (nur für Debugging)
+    $config = require __DIR__ . '/../config/database.php';
+    echo "<!-- Datenbank-Konfiguration: " . htmlspecialchars(print_r($config, true)) . " -->";
+    
     $db = new Database();
     $dbInfo = "<!-- MariaDB-Verbindung hergestellt. Datenbank: " . $db->getDbName() . " -->";
     echo $dbInfo;
