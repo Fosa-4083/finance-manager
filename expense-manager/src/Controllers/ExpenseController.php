@@ -284,14 +284,19 @@ class ExpenseController extends BaseController {
             try {
                 $expense = new Expense();
                 $expense->category_id = $_POST['category_id'] ?? null;
-                $expense->project_id = $_POST['project_id'] ?? null;
+                
+                // Leere project_id als NULL behandeln
+                $expense->project_id = !empty($_POST['project_id']) ? $_POST['project_id'] : null;
+                
                 $expense->date = $_POST['date'] ?? null;
                 $expense->description = $_POST['description'] ?? '';
                 $value = $_POST['value'] ?? 0;
                 $type = $_POST['type'] ?? 'expense';
                 
                 // Debug-Ausgabe
-                error_log("ExpenseController::store - Verarbeitete Daten: category_id={$expense->category_id}, project_id={$expense->project_id}, date={$expense->date}, description={$expense->description}, value={$value}, type={$type}");
+                error_log("ExpenseController::store - Verarbeitete Daten: category_id={$expense->category_id}, project_id=" . 
+                         (is_null($expense->project_id) ? "NULL" : $expense->project_id) . 
+                         ", date={$expense->date}, description={$expense->description}, value={$value}, type={$type}");
                 
                 // Wenn der Betrag positiv ist, aber der Typ "expense" ist, machen wir den Betrag negativ
                 if ($type === 'expense') {
