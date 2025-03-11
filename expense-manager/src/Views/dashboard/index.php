@@ -348,15 +348,40 @@
                 <div class="row">
                     <?php foreach ($activeProjects as $project): ?>
                     <div class="col-md-6 mb-3">
-                        <div class="card">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0"><?= htmlspecialchars($project['name']); ?></h6>
+                                <span class="badge <?= $project['expense_count'] > 0 ? 'bg-primary' : 'bg-secondary'; ?>">
+                                    <?= $project['expense_count']; ?> Buchungen
+                                </span>
+                            </div>
                             <div class="card-body">
-                                <h6 class="card-title"><?= htmlspecialchars($project['name']); ?></h6>
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Zeitraum</small>
+                                        <span class="d-block">
+                                            <?= $project['start_date'] ? date('d.m.Y', strtotime($project['start_date'])) : 'Nicht definiert'; ?>
+                                            <?= $project['end_date'] ? ' - ' . date('d.m.Y', strtotime($project['end_date'])) : ''; ?>
+                                        </span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Letzte Aktivität</small>
+                                        <span class="d-block">
+                                            <?= $project['last_activity'] ? date('d.m.Y', strtotime($project['last_activity'])) : 'Keine'; ?>
+                                        </span>
+                                    </div>
+                                </div>
+                                
                                 <?php if ($project['budget'] > 0): ?>
                                     <?php 
                                     $percent = $project['budget'] > 0 ? 
                                         round((abs($project['total_expenses']) / $project['budget']) * 100, 2) : 0;
                                     $colorClass = $percent > 100 ? 'bg-danger' : ($percent > 80 ? 'bg-warning' : 'bg-success');
                                     ?>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span>Budgetnutzung</span>
+                                        <span class="badge <?= $colorClass; ?>"><?= $percent; ?>%</span>
+                                    </div>
                                     <div class="progress mb-2" style="height: 10px;">
                                         <div class="progress-bar <?= $colorClass; ?>" 
                                              role="progressbar" 
@@ -366,17 +391,56 @@
                                              aria-valuemax="100">
                                         </div>
                                     </div>
-                                    <small class="text-muted">
-                                        <?= number_format(abs($project['total_expenses']), 2, ',', '.'); ?> € 
-                                        von <?= number_format($project['budget'], 2, ',', '.'); ?> € 
-                                        (<?= $percent; ?>%)
-                                    </small>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">
+                                            <?= number_format(abs($project['total_expenses']), 2, ',', '.'); ?> €
+                                        </small>
+                                        <small class="text-muted">
+                                            <?= number_format($project['budget'], 2, ',', '.'); ?> €
+                                        </small>
+                                    </div>
                                 <?php else: ?>
-                                    <p class="card-text">
-                                        Ausgaben: <?= number_format(abs($project['total_expenses']), 2, ',', '.'); ?> €
-                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span>Ausgaben</span>
+                                        <span class="text-danger fw-bold">
+                                            <?= number_format(abs($project['total_expenses']), 2, ',', '.'); ?> €
+                                        </span>
+                                    </div>
+                                    <?php if ($project['total_income'] > 0): ?>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span>Einnahmen</span>
+                                        <span class="text-success fw-bold">
+                                            <?= number_format($project['total_income'], 2, ',', '.'); ?> €
+                                        </span>
+                                    </div>
+                                    <?php endif; ?>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>Bilanz</span>
+                                        <span class="fw-bold <?= ($project['total_income'] + $project['total_expenses']) >= 0 ? 'text-success' : 'text-danger'; ?>">
+                                            <?= number_format($project['total_income'] + $project['total_expenses'], 2, ',', '.'); ?> €
+                                        </span>
+                                    </div>
                                 <?php endif; ?>
-                                <div class="mt-2">
+                                
+                                <?php if ($project['active_months'] > 0): ?>
+                                <div class="mt-3">
+                                    <small class="text-muted d-block">Aktivität über <?= $project['active_months']; ?> Monate</small>
+                                    <div class="d-flex mt-1">
+                                        <?php for ($i = 0; $i < min(12, $project['active_months']); $i++): ?>
+                                            <div class="bg-primary" style="height: 4px; width: <?= 100 / min(12, $project['active_months']); ?>%; margin-right: 1px;"></div>
+                                        <?php endfor; ?>
+                                        <?php for ($i = $project['active_months']; $i < 12; $i++): ?>
+                                            <div class="bg-light" style="height: 4px; width: <?= 100 / 12; ?>%; margin-right: 1px;"></div>
+                                        <?php endfor; ?>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="d-flex justify-content-between">
+                                    <a href="<?php echo \Utils\Path::url('/expenses?project_id=' . $project['id']); ?>" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-list"></i> Buchungen
+                                    </a>
                                     <a href="<?php echo \Utils\Path::url('/projects/show?id=' . $project['id']); ?>" class="btn btn-sm btn-primary">
                                         <i class="bi bi-eye"></i> Details
                                     </a>

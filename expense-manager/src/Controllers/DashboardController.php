@@ -96,12 +96,18 @@ class DashboardController extends BaseController {
         $stmt = $this->db->query('
             SELECT 
                 p.*,
-                0 as total_expenses,
-                0 as expense_count
+                COALESCE(SUM(CASE WHEN e.value < 0 THEN e.value ELSE 0 END), 0) as total_expenses,
+                COALESCE(SUM(CASE WHEN e.value > 0 THEN e.value ELSE 0 END), 0) as total_income,
+                COUNT(e.id) as expense_count,
+                MAX(e.date) as last_activity,
+                (SELECT COUNT(DISTINCT DATE_FORMAT(e2.date, "%Y-%m")) 
+                 FROM expenses e2 
+                 WHERE e2.project_id = p.id) as active_months
             FROM projects p
+            LEFT JOIN expenses e ON p.id = e.project_id
             WHERE p.status = "aktiv"
             GROUP BY p.id
-            ORDER BY p.name');
+            ORDER BY last_activity DESC, p.name');
         $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Vergleich zum Vormonat
