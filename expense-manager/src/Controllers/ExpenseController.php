@@ -532,34 +532,51 @@ class ExpenseController extends BaseController {
         switch ($field) {
             case 'description':
                 // Verbesserte Abfrage für Beschreibungsvorschläge mit mehr Kontext
-                $sql = 'SELECT DISTINCT description, value, category_id, 
+                $sql = 'SELECT DISTINCT e.description, ABS(e.value) as value, e.category_id, 
                         (SELECT COUNT(*) FROM expenses e2 WHERE e2.description = e.description) as count
                        FROM expenses e
-                       WHERE description LIKE :query';
+                       WHERE e.description LIKE :query';
                 if ($category_id) {
-                    $sql .= ' AND category_id = :category_id';
+                    $sql .= ' AND e.category_id = :category_id';
                     $params[':category_id'] = $category_id;
                 }
                 if ($project_id) {
-                    $sql .= ' AND project_id = :project_id';
+                    $sql .= ' AND e.project_id = :project_id';
                     $params[':project_id'] = $project_id;
                 }
-                $sql .= ' ORDER BY count DESC, date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
+                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
                 $params[':query'] = '%' . $query . '%';
                 break;
 
             case 'value':
                 // Verbesserte Abfrage für Betragsvorschläge mit Beschreibung und Häufigkeit
-                $sql = 'SELECT DISTINCT ABS(value) as value, description, 
+                $sql = 'SELECT DISTINCT ABS(e.value) as value, e.description, 
                         (SELECT COUNT(*) FROM expenses e2 WHERE ABS(e2.value) = ABS(e.value) AND e2.category_id = e.category_id) as count
                        FROM expenses e
-                       WHERE category_id = :category_id';
+                       WHERE 1=1';
+                
+                if ($category_id) {
+                    $sql .= ' AND e.category_id = :category_id';
+                    $params[':category_id'] = $category_id;
+                }
                 if ($project_id) {
-                    $sql .= ' AND project_id = :project_id';
+                    $sql .= ' AND e.project_id = :project_id';
                     $params[':project_id'] = $project_id;
                 }
-                $sql .= ' ORDER BY count DESC, date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
-                $params[':category_id'] = $category_id;
+                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
+                break;
+                
+            case 'category':
+                // Neue Abfrage für Kategorievorschläge basierend auf der Beschreibung
+                $sql = 'SELECT DISTINCT c.id, c.name, c.color, c.type, c.description,
+                        (SELECT COUNT(*) FROM expenses e WHERE e.category_id = c.id AND e.description LIKE :query) as relevance
+                       FROM categories c
+                       JOIN expenses e ON c.id = e.category_id
+                       WHERE e.description LIKE :query
+                       GROUP BY c.id
+                       ORDER BY relevance DESC
+                       LIMIT 5';
+                $params[':query'] = '%' . $query . '%';
                 break;
         }
 
@@ -579,5 +596,6 @@ class ExpenseController extends BaseController {
             header('Content-Type: application/json');
             echo json_encode([]);
         }
+        exit;
     }
 } 

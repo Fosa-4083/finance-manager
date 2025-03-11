@@ -76,12 +76,43 @@
                                 <label for="category_id" class="form-label">Kategorie</label>
                                 <select class="form-select" id="category_id" name="category_id" required>
                                     <option value="">Bitte wählen...</option>
-                                    <?php foreach ($categories as $category): ?>
-                                    <option value="<?= $category['id']; ?>">
-                                        <?= htmlspecialchars($category['name']); ?>
-                                    </option>
-                                    <?php endforeach; ?>
+                                    <?php 
+                                    // Kategorien nach Typ und Nutzungshäufigkeit sortieren
+                                    $expenseCategories = [];
+                                    $incomeCategories = [];
+                                    
+                                    foreach ($categories as $category) {
+                                        if ($category['type'] === 'income') {
+                                            $incomeCategories[] = $category;
+                                        } else {
+                                            $expenseCategories[] = $category;
+                                        }
+                                    }
+                                    ?>
+                                    <optgroup label="Ausgaben" style="background-color: #f8f9fa;">
+                                        <?php foreach ($expenseCategories as $category): ?>
+                                        <option value="<?= $category['id']; ?>" 
+                                                data-color="<?= $category['color']; ?>" 
+                                                data-type="expense"
+                                                data-description="<?= htmlspecialchars($category['description'] ?? ''); ?>"
+                                                style="border-left: 4px solid <?= $category['color']; ?>; padding-left: 8px;">
+                                            <?= htmlspecialchars($category['name']); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                    <optgroup label="Einnahmen" style="background-color: #e8f5e9;">
+                                        <?php foreach ($incomeCategories as $category): ?>
+                                        <option value="<?= $category['id']; ?>" 
+                                                data-color="<?= $category['color']; ?>" 
+                                                data-type="income"
+                                                data-description="<?= htmlspecialchars($category['description'] ?? ''); ?>"
+                                                style="border-left: 4px solid <?= $category['color']; ?>; padding-left: 8px;">
+                                            <?= htmlspecialchars($category['name']); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
                                 </select>
+                                <small class="form-text text-muted category-description" id="category_description"></small>
                             </div>
                             
                             <div class="mb-3">
@@ -147,22 +178,34 @@
             const valueInput = document.getElementById('value');
             const categorySelect = document.getElementById('category_id');
             const projectSelect = document.getElementById('project_id');
+            const typeExpenseRadio = document.getElementById('type_expense');
+            const typeIncomeRadio = document.getElementById('type_income');
             const descriptionSuggestions = document.getElementById('descriptionSuggestions');
             const valueSuggestions = document.getElementById('valueSuggestions');
+            const categoryDescription = document.getElementById('category_description');
             
-            // Debug-Ausgabe für DOM-Elemente
-            console.log('DOM-Elemente:', {
-                descriptionInput: descriptionInput,
-                valueInput: valueInput,
-                categorySelect: categorySelect,
-                projectSelect: projectSelect,
-                descriptionSuggestions: descriptionSuggestions,
-                valueSuggestions: valueSuggestions
-            });
-
             let debounceTimer;
             let currentSuggestionIndex = -1;
             let currentSuggestions = [];
+
+            // Kategoriebeschreibung anzeigen
+            function updateCategoryDescription() {
+                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+                if (selectedOption && selectedOption.dataset.description) {
+                    categoryDescription.textContent = selectedOption.dataset.description;
+                } else {
+                    categoryDescription.textContent = '';
+                }
+                
+                // Automatisch den richtigen Typ (Einnahme/Ausgabe) basierend auf der Kategorie auswählen
+                if (selectedOption && selectedOption.dataset.type) {
+                    if (selectedOption.dataset.type === 'income') {
+                        typeIncomeRadio.checked = true;
+                    } else {
+                        typeExpenseRadio.checked = true;
+                    }
+                }
+            }
 
             // Funktion für Beschreibungsvorschläge
             function fetchDescriptionSuggestions() {
@@ -188,8 +231,6 @@
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Erhaltene Vorschläge:', data); // Debug-Logging
-                        
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
@@ -199,18 +240,23 @@
                             data.forEach((item, index) => {
                                 const div = document.createElement('div');
                                 div.className = 'suggestion-item';
-                                div.dataset.index = index;
+                                div.innerHTML = `
+                                    ${item.description}
+                                    <span class="suggestion-count">${item.count}x verwendet</span>
+                                `;
+                                div.setAttribute('data-value', item.value || '');
+                                div.setAttribute('data-category-id', item.category_id || '');
                                 
-                                // Anzahl der Verwendungen anzeigen
-                                if (item.count && item.count > 1) {
-                                    div.innerHTML = `${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
-                                } else {
-                                    div.textContent = item.description;
-                                }
-                                
-                                div.addEventListener('click', () => {
-                                    applyDescriptionSuggestion(item);
+                                div.addEventListener('click', function() {
+                                    descriptionInput.value = item.description;
+                                    if (item.value) valueInput.value = Math.abs(item.value);
+                                    if (item.category_id) {
+                                        categorySelect.value = item.category_id;
+                                        updateCategoryDescription();
+                                    }
+                                    descriptionSuggestions.style.display = 'none';
                                 });
+                                
                                 descriptionSuggestions.appendChild(div);
                             });
                             
@@ -225,31 +271,10 @@
                     });
             }
 
-            // Funktion zum Anwenden eines Beschreibungsvorschlags
-            function applyDescriptionSuggestion(item) {
-                descriptionInput.value = item.description;
-                
-                // Betrag übernehmen, wenn vorhanden
-                if (item.value) {
-                    valueInput.value = Math.abs(item.value);
-                }
-                
-                // Kategorie auswählen, wenn vorhanden und keine ausgewählt ist
-                if (item.category_id && categorySelect.value === '') {
-                    categorySelect.value = item.category_id;
-                }
-                
-                // Projekt auswählen, wenn vorhanden und keins ausgewählt ist
-                if (item.project_id && projectSelect.value === '') {
-                    projectSelect.value = item.project_id;
-                }
-                
-                descriptionSuggestions.style.display = 'none';
-            }
-
             // Funktion für Betragsvorschläge
             function fetchValueSuggestions() {
                 const categoryId = categorySelect.value;
+                
                 if (!categoryId) {
                     valueSuggestions.style.display = 'none';
                     return;
@@ -260,7 +285,7 @@
                 // Cache-Busting durch Hinzufügen eines Zeitstempels
                 const cacheBuster = new Date().getTime();
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
-                
+
                 fetch(url)
                     .then(response => {
                         if (!response.ok) {
@@ -269,30 +294,23 @@
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Erhaltene Wertvorschläge:', data); // Debug-Logging
-                        
-                        currentSuggestions = data;
-                        currentSuggestionIndex = -1;
-                        
                         valueSuggestions.innerHTML = '';
                         
                         if (data && data.length > 0) {
-                            data.forEach((item, index) => {
+                            data.forEach(item => {
                                 const div = document.createElement('div');
                                 div.className = 'suggestion-item';
-                                div.dataset.index = index;
+                                div.innerHTML = `
+                                    <span class="suggestion-value">${parseFloat(item.value).toFixed(2)} €</span>
+                                    <small>${item.description || ''}</small>
+                                    <span class="suggestion-count">${item.count}x verwendet</span>
+                                `;
                                 
-                                // Formatierter Betrag mit Beschreibung und Häufigkeit
-                                if (item.count && item.count > 1) {
-                                    div.innerHTML = `${Math.abs(item.value).toFixed(2)} € - ${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
-                                } else {
-                                    div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
-                                }
-                                
-                                div.addEventListener('click', () => {
-                                    valueInput.value = Math.abs(item.value);
+                                div.addEventListener('click', function() {
+                                    valueInput.value = parseFloat(item.value).toFixed(2);
                                     valueSuggestions.style.display = 'none';
                                 });
+                                
                                 valueSuggestions.appendChild(div);
                             });
                             
@@ -302,101 +320,50 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Fehler beim Abrufen der Wertvorschläge:', error);
+                        console.error('Fehler beim Abrufen der Vorschläge:', error);
                         valueSuggestions.style.display = 'none';
                     });
             }
 
-            // Tastaturnavigation für Vorschläge
-            function handleKeyNavigation(e, suggestionContainer) {
-                const suggestionItems = suggestionContainer.querySelectorAll('.suggestion-item');
-                
-                if (!suggestionItems.length || suggestionContainer.style.display === 'none') {
-                    return;
-                }
-                
-                // Pfeil nach unten
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    currentSuggestionIndex = Math.min(currentSuggestionIndex + 1, suggestionItems.length - 1);
-                    highlightSuggestion(suggestionItems);
-                }
-                
-                // Pfeil nach oben
-                else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    currentSuggestionIndex = Math.max(currentSuggestionIndex - 1, 0);
-                    highlightSuggestion(suggestionItems);
-                }
-                
-                // Enter-Taste
-                else if (e.key === 'Enter' && currentSuggestionIndex >= 0) {
-                    e.preventDefault();
-                    suggestionItems[currentSuggestionIndex].click();
-                }
-                
-                // Escape-Taste
-                else if (e.key === 'Escape') {
-                    suggestionContainer.style.display = 'none';
-                    currentSuggestionIndex = -1;
-                }
-            }
-            
-            // Markiert den ausgewählten Vorschlag
-            function highlightSuggestion(items) {
-                items.forEach((item, index) => {
-                    if (index === currentSuggestionIndex) {
-                        item.classList.add('bg-primary', 'text-white');
-                        item.scrollIntoView({ block: 'nearest' });
-                    } else {
-                        item.classList.remove('bg-primary', 'text-white');
-                    }
-                });
-            }
-
-            // Event-Listener
-            descriptionInput.addEventListener('input', () => {
+            // Event-Listener für Beschreibungseingabe
+            descriptionInput.addEventListener('input', function() {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(fetchDescriptionSuggestions, 300);
             });
-            
-            descriptionInput.addEventListener('keydown', (e) => {
-                handleKeyNavigation(e, descriptionSuggestions);
-            });
 
-            valueInput.addEventListener('focus', fetchValueSuggestions);
-            
-            valueInput.addEventListener('keydown', (e) => {
-                handleKeyNavigation(e, valueSuggestions);
-            });
-
-            categorySelect.addEventListener('change', () => {
+            // Event-Listener für Kategorieauswahl
+            categorySelect.addEventListener('change', function() {
+                updateCategoryDescription();
+                
+                // Betragsvorschläge anzeigen, wenn eine Kategorie ausgewählt wird
+                fetchValueSuggestions();
+                
+                // Wenn Beschreibung bereits eingegeben wurde, auch Beschreibungsvorschläge aktualisieren
                 if (descriptionInput.value.trim().length >= 2) {
                     fetchDescriptionSuggestions();
                 }
-                if (document.activeElement === valueInput) {
+            });
+
+            // Event-Listener für Fokus auf Betragseingabe
+            valueInput.addEventListener('focus', function() {
+                if (categorySelect.value) {
                     fetchValueSuggestions();
                 }
             });
 
-            projectSelect.addEventListener('change', () => {
-                if (descriptionInput.value.trim().length >= 2) {
-                    fetchDescriptionSuggestions();
-                }
-                if (document.activeElement === valueInput) {
-                    fetchValueSuggestions();
-                }
-            });
-
-            // Klick außerhalb schließt Vorschläge
-            document.addEventListener('click', (e) => {
+            // Klick außerhalb der Vorschläge schließt diese
+            document.addEventListener('click', function(e) {
                 if (!descriptionInput.contains(e.target) && !descriptionSuggestions.contains(e.target)) {
                     descriptionSuggestions.style.display = 'none';
                 }
+                
                 if (!valueInput.contains(e.target) && !valueSuggestions.contains(e.target)) {
                     valueSuggestions.style.display = 'none';
                 }
             });
+            
+            // Initialisierung
+            updateCategoryDescription();
         });
     </script>
 </body>

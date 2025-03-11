@@ -36,6 +36,17 @@
             border-bottom: none;
         }
         
+        .suggestion-item .suggestion-count {
+            float: right;
+            color: #6c757d;
+            font-size: 0.8em;
+        }
+        
+        .suggestion-item .suggestion-value {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
         .form-group {
             position: relative;
             margin-bottom: 1rem;
@@ -69,7 +80,10 @@
                             <?php
                             // Kategorien aus der Datenbank laden
                             $db = $GLOBALS['db']; // Globale Datenbankverbindung verwenden
-                            $stmt = $db->query('SELECT id, name, color FROM categories ORDER BY name');
+                            $stmt = $db->query('SELECT c.id, c.name, c.color, c.type, c.description, 
+                                               (SELECT COUNT(*) FROM expenses e WHERE e.category_id = c.id) as usage_count 
+                                               FROM categories c 
+                                               ORDER BY c.type DESC, usage_count DESC, c.name');
                             $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             
                             // Kategorien in Einnahmen und Ausgaben gruppieren
@@ -77,32 +91,40 @@
                             $expenseCategories = [];
                             
                             foreach ($categories as $category) {
-                                if (strpos($category['name'], 'E:') === 0) {
+                                if ($category['type'] === 'income') {
                                     $incomeCategories[] = $category;
                                 } else {
                                     $expenseCategories[] = $category;
                                 }
                             }
                             ?>
-                            <optgroup label="Ausgaben">
+                            <optgroup label="Ausgaben" style="background-color: #f8f9fa;">
                                 <?php foreach ($expenseCategories as $category): ?>
-                                <option value="<?= $category['id']; ?>" data-color="<?= $category['color']; ?>" data-type="expense">
+                                <option value="<?= $category['id']; ?>" 
+                                        data-color="<?= $category['color']; ?>" 
+                                        data-type="expense"
+                                        data-description="<?= htmlspecialchars($category['description'] ?? ''); ?>"
+                                        style="border-left: 4px solid <?= $category['color']; ?>; padding-left: 8px;">
                                     <?= htmlspecialchars($category['name']); ?>
                                 </option>
                                 <?php endforeach; ?>
                             </optgroup>
-                            <optgroup label="Einnahmen">
+                            <optgroup label="Einnahmen" style="background-color: #e8f5e9;">
                                 <?php foreach ($incomeCategories as $category): ?>
-                                <option value="<?= $category['id']; ?>" data-color="<?= $category['color']; ?>" data-type="income">
+                                <option value="<?= $category['id']; ?>" 
+                                        data-color="<?= $category['color']; ?>" 
+                                        data-type="income"
+                                        data-description="<?= htmlspecialchars($category['description'] ?? ''); ?>"
+                                        style="border-left: 4px solid <?= $category['color']; ?>; padding-left: 8px;">
                                     <?= htmlspecialchars($category['name']); ?>
                                 </option>
                                 <?php endforeach; ?>
                             </optgroup>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label for="quick_description" class="form-label">Beschreibung</label>
-                        <div class="form-group">
+                        <div class="position-relative">
                             <input type="text" class="form-control" id="quick_description" name="description" required>
                             <div id="descriptionSuggestions" class="suggestions-container"></div>
                         </div>
@@ -123,8 +145,8 @@
                     </div>
                     <div class="col-md-2">
                         <label for="quick_value" class="form-label">Betrag (€)</label>
-                        <div class="form-group">
-                            <input type="number" class="form-control" id="quick_value" name="value" step="0.01" required>
+                        <div class="position-relative">
+                            <input type="number" class="form-control" id="quick_value" name="value" step="0.01" min="0.01" required>
                             <div id="valueSuggestions" class="suggestions-container"></div>
                         </div>
                     </div>
@@ -472,7 +494,7 @@
             let currentSuggestionIndex = -1;
             let currentSuggestions = [];
 
-            // Aktualisierte Funktion für Beschreibungsvorschläge
+            // Funktion für Beschreibungsvorschläge
             function fetchDescriptionSuggestions() {
                 const query = descriptionInput.value.trim();
                 
@@ -534,7 +556,7 @@
                     });
             }
 
-            // Aktualisierte Funktion für Betragsvorschläge
+            // Funktion für Betragsvorschläge
             function fetchValueSuggestions() {
                 const categoryId = categorySelect.value;
                 if (!categoryId) {
@@ -670,8 +692,8 @@
                 });
             }
 
-            // Event-Listener
-            descriptionInput.addEventListener('input', () => {
+            // Event-Listener für Beschreibungseingabe
+            descriptionInput.addEventListener('input', function() {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(fetchDescriptionSuggestions, 300);
             });
