@@ -68,7 +68,7 @@
                             <option value="">Bitte wählen...</option>
                             <?php
                             // Kategorien aus der Datenbank laden
-                            $db = new PDO('sqlite:' . __DIR__ . '/../../../database/database.sqlite');
+                            $db = $GLOBALS['db']; // Globale Datenbankverbindung verwenden
                             $stmt = $db->query('SELECT id, name, color FROM categories ORDER BY name');
                             $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             
