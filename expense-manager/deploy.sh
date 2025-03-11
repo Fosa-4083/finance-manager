@@ -4,10 +4,10 @@
 
 # Konfiguration
 APP_NAME="expense-manager"
-SERVER_DATA_DIR="/var/data/$APP_NAME"
-DEPLOY_DIR="/var/www/html/$APP_NAME"
-BACKUP_DIR="$SERVER_DATA_DIR/backups"
-DB_FILE="$SERVER_DATA_DIR/database.sqlite"
+SERVER_DATA_DIR="/var/expense-manager"
+DEPLOY_DIR="/var/www/vhosts/strassl.info/httpdocs/expense-manager"
+BACKUP_DIR="$SERVER_DATA_DIR/database/backups"
+DB_FILE="$SERVER_DATA_DIR/database/database.sqlite"
 ENV_FILE="$SERVER_DATA_DIR/.env"
 
 # Farben für die Ausgabe
@@ -90,6 +90,7 @@ if [ ! -L "$DEPLOY_DIR/database/database.sqlite" ]; then
     # Prüfen, ob eine lokale Datenbank existiert, die migriert werden muss
     if [ -f "$DEPLOY_DIR/database/database.sqlite" ] && [ ! -f "$DB_FILE" ]; then
         success "Lokale Datenbank gefunden. Migriere zu $DB_FILE..."
+        mkdir -p "$(dirname "$DB_FILE")" || error_exit "Konnte Verzeichnis $(dirname "$DB_FILE") nicht erstellen."
         cp "$DEPLOY_DIR/database/database.sqlite" "$DB_FILE" || error_exit "Konnte Datenbank nicht migrieren."
         rm "$DEPLOY_DIR/database/database.sqlite" || warning "Konnte lokale Datenbank nicht entfernen."
     fi
@@ -104,6 +105,7 @@ if [ ! -L "$DEPLOY_DIR/database/backups" ]; then
     # Prüfen, ob ein lokales Backup-Verzeichnis existiert, das migriert werden muss
     if [ -d "$DEPLOY_DIR/database/backups" ] && [ "$(ls -A $DEPLOY_DIR/database/backups)" ]; then
         success "Lokale Backups gefunden. Migriere zu $BACKUP_DIR..."
+        mkdir -p "$BACKUP_DIR" || error_exit "Konnte Verzeichnis $BACKUP_DIR nicht erstellen."
         cp -r "$DEPLOY_DIR/database/backups"/* "$BACKUP_DIR/" || warning "Konnte Backups nicht vollständig migrieren."
         rm -rf "$DEPLOY_DIR/database/backups" || warning "Konnte lokales Backup-Verzeichnis nicht entfernen."
     fi
@@ -124,6 +126,6 @@ if [ ! -f "$DB_FILE" ]; then
 fi
 
 success "=== Deployment für $APP_NAME wurde erfolgreich abgeschlossen ==="
-echo "Anwendung ist verfügbar unter: http://your-server/$APP_NAME"
+echo "Anwendung ist verfügbar unter: https://strassl.info/expense-manager"
 echo "Datenbank-Pfad: $DB_FILE"
 echo "Backup-Verzeichnis: $BACKUP_DIR" 
