@@ -75,25 +75,61 @@ class ExpenseGoalController extends BaseController {
             $goal['color'] = isset($goal['color']) ? $goal['color'] : '#cccccc';
             $goal['category_name'] = isset($goal['category_name']) ? $goal['category_name'] : 'Unbekannt';
             
-            $goalsByYear[$goal['year']][] = $goal;
+            // Kategorie-Typ aus der Datenbank holen
+            $stmtType = $this->db->prepare('SELECT type FROM categories WHERE id = ?');
+            $stmtType->execute([$goal['category_id']]);
+            $categoryType = $stmtType->fetchColumn();
+            $goal['category_type'] = $categoryType ?: 'expense';
+            
+            $goalsByYear[$goal['year']][$goal['category_type']][] = $goal;
         }
         
-        // Zusammenfassung pro Jahr berechnen
+        // Zusammenfassung pro Jahr und Typ berechnen
         $yearSummaries = [];
-        foreach ($goalsByYear as $year => $goals) {
-            $totalGoal = 0;
-            $totalCurrent = 0;
+        foreach ($goalsByYear as $year => $typeGoals) {
+            $yearSummaries[$year] = [
+                'income' => [
+                    'total_goal' => 0,
+                    'total_current' => 0,
+                    'percentage' => 0
+                ],
+                'expense' => [
+                    'total_goal' => 0,
+                    'total_current' => 0,
+                    'percentage' => 0
+                ],
+                'total' => [
+                    'total_goal' => 0,
+                    'total_current' => 0,
+                    'percentage' => 0
+                ]
+            ];
             
-            foreach ($goals as $goal) {
-                $totalGoal += (float)$goal['goal'];
-                $totalCurrent += (float)$goal['current_value'];
+            // Einnahmen-Zusammenfassung
+            if (isset($typeGoals['income'])) {
+                foreach ($typeGoals['income'] as $goal) {
+                    $yearSummaries[$year]['income']['total_goal'] += (float)$goal['goal'];
+                    $yearSummaries[$year]['income']['total_current'] += (float)$goal['current_value'];
+                }
+                $yearSummaries[$year]['income']['percentage'] = $yearSummaries[$year]['income']['total_goal'] > 0 ? 
+                    ($yearSummaries[$year]['income']['total_current'] / $yearSummaries[$year]['income']['total_goal']) * 100 : 0;
             }
             
-            $yearSummaries[$year] = [
-                'total_goal' => $totalGoal,
-                'total_current' => $totalCurrent,
-                'percentage' => $totalGoal > 0 ? ($totalCurrent / $totalGoal) * 100 : 0
-            ];
+            // Ausgaben-Zusammenfassung
+            if (isset($typeGoals['expense'])) {
+                foreach ($typeGoals['expense'] as $goal) {
+                    $yearSummaries[$year]['expense']['total_goal'] += (float)$goal['goal'];
+                    $yearSummaries[$year]['expense']['total_current'] += (float)$goal['current_value'];
+                }
+                $yearSummaries[$year]['expense']['percentage'] = $yearSummaries[$year]['expense']['total_goal'] > 0 ? 
+                    ($yearSummaries[$year]['expense']['total_current'] / $yearSummaries[$year]['expense']['total_goal']) * 100 : 0;
+            }
+            
+            // Gesamt-Zusammenfassung
+            $yearSummaries[$year]['total']['total_goal'] = $yearSummaries[$year]['income']['total_goal'] + $yearSummaries[$year]['expense']['total_goal'];
+            $yearSummaries[$year]['total']['total_current'] = $yearSummaries[$year]['income']['total_current'] + $yearSummaries[$year]['expense']['total_current'];
+            $yearSummaries[$year]['total']['percentage'] = $yearSummaries[$year]['total']['total_goal'] > 0 ? 
+                ($yearSummaries[$year]['total']['total_current'] / $yearSummaries[$year]['total']['total_goal']) * 100 : 0;
         }
         
         include VIEW_PATH . 'expense-goals/index.php';
