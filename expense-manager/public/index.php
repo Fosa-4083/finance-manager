@@ -129,7 +129,7 @@ $router->addRoute('/expenses/edit', 'Controllers\ExpenseController', 'edit', tru
 $router->addRoute('/expenses/update', 'Controllers\ExpenseController', 'update', true);
 $router->addRoute('/expenses/delete', 'Controllers\ExpenseController', 'delete', true);
 $router->addRoute('/expenses/bulk-update', 'Controllers\ExpenseController', 'bulkUpdate', true);
-$router->addRoute('/expenses/suggestions', 'Controllers\ExpenseController', 'getSuggestions', false);
+$router->addRoute('/expenses/suggestions', 'Controllers\ExpenseController', 'getSuggestions', true);
 
 // Routen für Ausgabenziele (erfordern Authentifizierung)
 $router->addRoute('/expense-goals', 'Controllers\ExpenseGoalController', 'index', true);

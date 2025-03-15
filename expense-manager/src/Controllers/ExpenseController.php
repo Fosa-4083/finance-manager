@@ -405,59 +405,54 @@ class ExpenseController extends BaseController {
     }
 
     public function update() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'] ?? null;
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . \Utils\Path::url('/expenses'));
+            exit;
+        }
+        
+        $id = $_POST['id'] ?? null;
+        $category_id = $_POST['category_id'] ?? null;
+        $project_id = !empty($_POST['project_id']) ? $_POST['project_id'] : null; // Korrigiert: Leere Werte als NULL behandeln
+        $date = $_POST['date'] ?? null;
+        $description = $_POST['description'] ?? '';
+        $value = $_POST['value'] ?? 0;
+        $afa = isset($_POST['afa']) ? 1 : 0;
+        
+        // Validierung
+        if (!$id || !$category_id || !$date || $value == 0) {
+            $_SESSION['error'] = 'Bitte füllen Sie alle Pflichtfelder aus.';
+            header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
+            exit;
+        }
+        
+        // Prüfen, ob die Kategorie existiert
+        $stmt = $this->db->prepare('SELECT type FROM categories WHERE id = ?');
+        $stmt->execute([$category_id]);
+        $category = $stmt->fetch();
+        if (!$category) {
+            $_SESSION['error'] = 'Die ausgewählte Kategorie existiert nicht.';
+            header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
+            exit;
+        }
+        
+        // Betrag basierend auf Kategorietyp anpassen (positiv für Einnahmen, negativ für Ausgaben)
+        $value = abs($value); // Sicherstellen, dass der Wert positiv ist
+        if ($category['type'] === 'expense') {
+            $value = -$value; // Für Ausgaben negativ machen
+        }
+        
+        try {
+            $expense = new \Models\Expense($this->db);
+            $expense->setId($id);
+            $expense->setCategoryId($category_id);
+            $expense->setProjectId($project_id); // Kann NULL sein
+            $expense->setDate($date);
+            $expense->setDescription($description);
+            $expense->setValue($value);
+            $expense->setAfa($afa);
             
-            if (!$id) {
-                $_SESSION['error'] = 'Keine Ausgabe-ID angegeben.';
-                header('Location: ' . \Utils\Path::url('/expenses'));
-                exit;
-            }
-            
-            $expense = new Expense();
-            if (!$expense->findById($id)) {
-                $_SESSION['error'] = 'Ausgabe nicht gefunden.';
-                header('Location: ' . \Utils\Path::url('/expenses'));
-                exit;
-            }
-            
-            $expense->category_id = $_POST['category_id'] ?? null;
-            $expense->project_id = $_POST['project_id'] ?? null;
-            $expense->date = $_POST['date'] ?? null;
-            $expense->description = $_POST['description'] ?? '';
-            $value = $_POST['value'] ?? 0;
-            $type = $_POST['type'] ?? 'expense';
-            
-            // Wenn der Betrag positiv ist, aber der Typ "expense" ist, machen wir den Betrag negativ
-            if ($type === 'expense') {
-                $expense->value = -abs($value);
-            } else {
-                $expense->value = abs($value);
-            }
-            
-            $expense->afa = isset($_POST['afa']) ? 1 : 0;
-            
-            // Validierung
-            if (empty($expense->category_id)) {
-                $_SESSION['error'] = 'Bitte wählen Sie eine Kategorie aus.';
-                header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
-                exit;
-            }
-            
-            if (empty($expense->date)) {
-                $_SESSION['error'] = 'Bitte geben Sie ein Datum ein.';
-                header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
-                exit;
-            }
-            
-            if (!is_numeric($value) || $value == 0) {
-                $_SESSION['error'] = 'Bitte geben Sie einen gültigen Betrag ein.';
-                header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
-                exit;
-            }
-            
-            if ($expense->update()) {
-                $_SESSION['success'] = 'Buchung erfolgreich aktualisiert.';
+            if ($expense->save()) {
+                $_SESSION['success'] = 'Buchung wurde erfolgreich aktualisiert.';
                 header('Location: ' . \Utils\Path::url('/expenses'));
                 exit;
             } else {
@@ -465,6 +460,10 @@ class ExpenseController extends BaseController {
                 header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
                 exit;
             }
+        } catch (\Exception $e) {
+            $_SESSION['error'] = 'Fehler: ' . $e->getMessage();
+            header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
+            exit;
         }
     }
 

@@ -306,6 +306,8 @@
             function fetchCompleteSuggestions() {
                 const query = descriptionInput.value.trim();
                 
+                console.log('fetchCompleteSuggestions aufgerufen mit Query:', query);
+                
                 if (query.length < 2) {
                     descriptionSuggestions.style.display = 'none';
                     return;
@@ -314,15 +316,19 @@
                 // Cache-Busting durch Hinzufügen eines Zeitstempels
                 const cacheBuster = new Date().getTime();
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=complete&query=${encodeURIComponent(query)}&_=${cacheBuster}`;
+                
+                console.log('Vorschläge werden abgerufen von URL:', url);
 
                 fetch(url)
                     .then(response => {
+                        console.log('Server-Antwort erhalten:', response.status);
                         if (!response.ok) {
                             throw new Error('Server-Antwort nicht OK');
                         }
                         return response.json();
                     })
                     .then(data => {
+                        console.log('Erhaltene Vorschläge:', data);
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
