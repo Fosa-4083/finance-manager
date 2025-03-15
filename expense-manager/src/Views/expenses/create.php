@@ -40,6 +40,58 @@
             margin-bottom: 1rem;
         }
         
+        /* Verbesserte Stile für Vorschläge */
+        .suggestion-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px 12px;
+        }
+        
+        .suggestion-main {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        
+        .suggestion-description {
+            font-weight: 500;
+        }
+        
+        .suggestion-value {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .suggestion-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .suggestion-category {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .category-color-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .suggestion-count {
+            font-size: 0.8em;
+            color: #888;
+            margin-left: 8px;
+        }
+        
+        .suggestion-project {
+            font-style: italic;
+        }
+        
         /* Debug-Stil für Sichtbarkeit */
         .debug-visible {
             border: 2px solid red !important;
@@ -215,8 +267,43 @@
                 }
             }
 
-            // Funktion für Beschreibungsvorschläge
-            function fetchDescriptionSuggestions() {
+            // Funktion zum Anwenden eines Vorschlags auf alle Felder
+            function applySuggestion(suggestion) {
+                // Beschreibung übernehmen
+                if (suggestion.description) {
+                    descriptionInput.value = suggestion.description;
+                }
+                
+                // Betrag übernehmen (immer als positiver Wert)
+                if (suggestion.value) {
+                    valueInput.value = parseFloat(suggestion.value).toFixed(2);
+                }
+                
+                // Kategorie übernehmen
+                if (suggestion.category_id) {
+                    categorySelect.value = suggestion.category_id;
+                    updateCategoryDescription();
+                }
+                
+                // Projekt übernehmen, falls vorhanden
+                if (suggestion.project_id) {
+                    projectSelect.value = suggestion.project_id;
+                }
+                
+                // Typ (Einnahme/Ausgabe) basierend auf der Kategorie setzen
+                if (suggestion.category_type === 'income') {
+                    typeIncomeRadio.checked = true;
+                } else {
+                    typeExpenseRadio.checked = true;
+                }
+                
+                // Vorschläge ausblenden
+                descriptionSuggestions.style.display = 'none';
+                valueSuggestions.style.display = 'none';
+            }
+
+            // Funktion für vollständige Vorschläge beim Tippen
+            function fetchCompleteSuggestions() {
                 const query = descriptionInput.value.trim();
                 
                 if (query.length < 2) {
@@ -224,12 +311,9 @@
                     return;
                 }
 
-                const categoryId = categorySelect.value;
-                const projectId = projectSelect.value;
-                
                 // Cache-Busting durch Hinzufügen eines Zeitstempels
                 const cacheBuster = new Date().getTime();
-                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=complete&query=${encodeURIComponent(query)}&_=${cacheBuster}`;
 
                 fetch(url)
                     .then(response => {
@@ -248,21 +332,35 @@
                             data.forEach((item, index) => {
                                 const div = document.createElement('div');
                                 div.className = 'suggestion-item';
-                                div.innerHTML = `
-                                    ${item.description}
-                                    <span class="suggestion-count">${item.count}x verwendet</span>
-                                `;
-                                div.setAttribute('data-value', item.value || '');
-                                div.setAttribute('data-category-id', item.category_id || '');
+                                div.setAttribute('tabindex', '0'); // Für Tastaturnavigation
                                 
+                                // Formatierter Vorschlag mit mehr Details
+                                div.innerHTML = `
+                                    <div class="suggestion-main">
+                                        <span class="suggestion-description">${item.description}</span>
+                                        <span class="suggestion-value">${parseFloat(item.value).toFixed(2)} €</span>
+                                    </div>
+                                    <div class="suggestion-details">
+                                        <span class="suggestion-category">
+                                            <span class="category-color-dot" style="background-color: ${item.category_color || '#ccc'}"></span>
+                                            ${item.category_name || 'Keine Kategorie'}
+                                        </span>
+                                        ${item.project_name ? `<span class="suggestion-project">${item.project_name}</span>` : ''}
+                                        <span class="suggestion-count">${item.count}x verwendet</span>
+                                    </div>
+                                `;
+                                
+                                // Event-Listener für Klick
                                 div.addEventListener('click', function() {
-                                    descriptionInput.value = item.description;
-                                    if (item.value) valueInput.value = Math.abs(item.value);
-                                    if (item.category_id) {
-                                        categorySelect.value = item.category_id;
-                                        updateCategoryDescription();
+                                    applySuggestion(item);
+                                });
+                                
+                                // Event-Listener für Tastatur (Enter)
+                                div.addEventListener('keydown', function(e) {
+                                    if (e.key === 'Enter') {
+                                        applySuggestion(item);
+                                        e.preventDefault();
                                     }
-                                    descriptionSuggestions.style.display = 'none';
                                 });
                                 
                                 descriptionSuggestions.appendChild(div);
@@ -308,15 +406,36 @@
                             data.forEach(item => {
                                 const div = document.createElement('div');
                                 div.className = 'suggestion-item';
+                                div.setAttribute('tabindex', '0'); // Für Tastaturnavigation
+                                
+                                // Formatierter Vorschlag mit mehr Details
                                 div.innerHTML = `
-                                    <span class="suggestion-value">${parseFloat(item.value).toFixed(2)} €</span>
-                                    <small>${item.description || ''}</small>
-                                    <span class="suggestion-count">${item.count}x verwendet</span>
+                                    <div class="suggestion-main">
+                                        <span class="suggestion-value">${parseFloat(item.value).toFixed(2)} €</span>
+                                        <span class="suggestion-count">${item.count}x verwendet</span>
+                                    </div>
+                                    ${item.description ? `<div class="suggestion-details">${item.description}</div>` : ''}
                                 `;
                                 
+                                // Event-Listener für Klick
                                 div.addEventListener('click', function() {
                                     valueInput.value = parseFloat(item.value).toFixed(2);
+                                    if (item.description && !descriptionInput.value) {
+                                        descriptionInput.value = item.description;
+                                    }
                                     valueSuggestions.style.display = 'none';
+                                });
+                                
+                                // Event-Listener für Tastatur (Enter)
+                                div.addEventListener('keydown', function(e) {
+                                    if (e.key === 'Enter') {
+                                        valueInput.value = parseFloat(item.value).toFixed(2);
+                                        if (item.description && !descriptionInput.value) {
+                                            descriptionInput.value = item.description;
+                                        }
+                                        valueSuggestions.style.display = 'none';
+                                        e.preventDefault();
+                                    }
                                 });
                                 
                                 valueSuggestions.appendChild(div);
@@ -336,7 +455,7 @@
             // Event-Listener für Beschreibungseingabe
             descriptionInput.addEventListener('input', function() {
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(fetchDescriptionSuggestions, 300);
+                debounceTimer = setTimeout(fetchCompleteSuggestions, 300);
             });
 
             // Event-Listener für Kategorieauswahl
@@ -348,7 +467,7 @@
                 
                 // Wenn Beschreibung bereits eingegeben wurde, auch Beschreibungsvorschläge aktualisieren
                 if (descriptionInput.value.trim().length >= 2) {
-                    fetchDescriptionSuggestions();
+                    fetchCompleteSuggestions();
                 }
             });
 
@@ -356,6 +475,35 @@
             valueInput.addEventListener('focus', function() {
                 if (categorySelect.value) {
                     fetchValueSuggestions();
+                }
+            });
+
+            // Tastaturnavigation für Vorschläge
+            descriptionInput.addEventListener('keydown', function(e) {
+                if (descriptionSuggestions.style.display === 'block') {
+                    const items = descriptionSuggestions.querySelectorAll('.suggestion-item');
+                    
+                    if (e.key === 'ArrowDown') {
+                        currentSuggestionIndex = Math.min(currentSuggestionIndex + 1, items.length - 1);
+                        items[currentSuggestionIndex].focus();
+                        e.preventDefault();
+                    } else if (e.key === 'ArrowUp') {
+                        if (currentSuggestionIndex > 0) {
+                            currentSuggestionIndex--;
+                            items[currentSuggestionIndex].focus();
+                        } else {
+                            currentSuggestionIndex = -1;
+                            descriptionInput.focus();
+                        }
+                        e.preventDefault();
+                    } else if (e.key === 'Escape') {
+                        descriptionSuggestions.style.display = 'none';
+                        currentSuggestionIndex = -1;
+                        e.preventDefault();
+                    } else if (e.key === 'Enter' && currentSuggestionIndex >= 0) {
+                        applySuggestion(currentSuggestions[currentSuggestionIndex]);
+                        e.preventDefault();
+                    }
                 }
             });
 

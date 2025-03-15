@@ -39,6 +39,58 @@
             position: relative;
             margin-bottom: 1rem;
         }
+        
+        /* Verbesserte Stile für Vorschläge */
+        .suggestion-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px 12px;
+        }
+        
+        .suggestion-main {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        
+        .suggestion-description {
+            font-weight: 500;
+        }
+        
+        .suggestion-value {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .suggestion-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .suggestion-category {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .category-color-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .suggestion-count {
+            font-size: 0.8em;
+            color: #888;
+            margin-left: 8px;
+        }
+        
+        .suggestion-project {
+            font-style: italic;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -97,8 +149,7 @@
                             <div class="mb-3">
                                 <label for="description" class="form-label">Beschreibung</label>
                                 <div class="form-group">
-                                    <textarea class="form-control" id="description" name="description" 
-                                              rows="3"><?= htmlspecialchars($expense['description']); ?></textarea>
+                                    <textarea class="form-control" id="description" name="description" rows="3"><?= htmlspecialchars($expense['description']); ?></textarea>
                                     <div id="descriptionSuggestions" class="suggestions-container"></div>
                                 </div>
                             </div>
@@ -120,8 +171,7 @@
                             <div class="mb-3">
                                 <label for="value" class="form-label">Betrag (€)</label>
                                 <div class="form-group">
-                                    <input type="number" class="form-control" id="value" name="value" 
-                                           step="0.01" min="0.01" value="<?= abs($expense['value']); ?>" required>
+                                    <input type="number" class="form-control" id="value" name="value" step="0.01" min="0.01" value="<?= abs($expense['value']); ?>" required>
                                     <small id="valueHint" class="form-text text-muted">Betrag wird automatisch als Einnahme/Ausgabe gesetzt</small>
                                     <div id="valueSuggestions" class="suggestions-container"></div>
                                 </div>
@@ -151,30 +201,79 @@
             const valueInput = document.getElementById('value');
             const categorySelect = document.getElementById('category_id');
             const projectSelect = document.getElementById('project_id');
-            const descriptionSuggestions = document.getElementById('descriptionSuggestions');
-            const valueSuggestions = document.getElementById('valueSuggestions');
             const typeExpenseRadio = document.getElementById('type_expense');
             const typeIncomeRadio = document.getElementById('type_income');
-            const valueHint = document.getElementById('valueHint');
-
+            const descriptionSuggestions = document.getElementById('descriptionSuggestions');
+            const valueSuggestions = document.getElementById('valueSuggestions');
+            const categoryDescription = document.getElementById('category_description');
+            
             let debounceTimer;
             let currentSuggestionIndex = -1;
             let currentSuggestions = [];
-            
+
             // Funktion zur Aktualisierung des Typs (Einnahme/Ausgabe) basierend auf der ausgewählten Kategorie
-            function updateCategoryType() {
-                // Prüfen, welcher Radio-Button ausgewählt ist
-                if (typeIncomeRadio.checked) {
-                    valueHint.textContent = 'Betrag wird als Einnahme (positiv) gespeichert';
-                    valueHint.className = 'form-text text-success';
+            function updateCategoryDescription() {
+                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+                if (selectedOption && selectedOption.dataset.description) {
+                    categoryDescription.textContent = selectedOption.dataset.description;
                 } else {
-                    valueHint.textContent = 'Betrag wird als Ausgabe (negativ) gespeichert';
-                    valueHint.className = 'form-text text-danger';
+                    categoryDescription.textContent = '';
+                }
+                
+                // Automatisch den richtigen Typ (Einnahme/Ausgabe) basierend auf der Kategorie auswählen
+                if (selectedOption && selectedOption.dataset.type) {
+                    const type = selectedOption.dataset.type;
+                    const valueHint = document.getElementById('valueHint');
+                    
+                    if (type === 'income') {
+                        typeIncomeRadio.checked = true;
+                        valueHint.textContent = 'Betrag wird als Einnahme (positiv) gespeichert';
+                        valueHint.className = 'form-text text-success';
+                    } else {
+                        typeExpenseRadio.checked = true;
+                        valueHint.textContent = 'Betrag wird als Ausgabe (negativ) gespeichert';
+                        valueHint.className = 'form-text text-danger';
+                    }
                 }
             }
 
-            // Funktion für Beschreibungsvorschläge
-            function fetchDescriptionSuggestions() {
+            // Funktion zum Anwenden eines Vorschlags auf alle Felder
+            function applySuggestion(suggestion) {
+                // Beschreibung übernehmen
+                if (suggestion.description) {
+                    descriptionInput.value = suggestion.description;
+                }
+                
+                // Betrag übernehmen (immer als positiver Wert)
+                if (suggestion.value) {
+                    valueInput.value = parseFloat(suggestion.value).toFixed(2);
+                }
+                
+                // Kategorie übernehmen
+                if (suggestion.category_id) {
+                    categorySelect.value = suggestion.category_id;
+                    updateCategoryDescription();
+                }
+                
+                // Projekt übernehmen, falls vorhanden
+                if (suggestion.project_id) {
+                    projectSelect.value = suggestion.project_id;
+                }
+                
+                // Typ (Einnahme/Ausgabe) basierend auf der Kategorie setzen
+                if (suggestion.category_type === 'income') {
+                    typeIncomeRadio.checked = true;
+                } else {
+                    typeExpenseRadio.checked = true;
+                }
+                
+                // Vorschläge ausblenden
+                descriptionSuggestions.style.display = 'none';
+                valueSuggestions.style.display = 'none';
+            }
+
+            // Funktion für vollständige Vorschläge beim Tippen
+            function fetchCompleteSuggestions() {
                 const query = descriptionInput.value.trim();
                 
                 if (query.length < 2) {
@@ -182,12 +281,9 @@
                     return;
                 }
 
-                const categoryId = categorySelect.value;
-                const projectId = projectSelect.value;
-                
                 // Cache-Busting durch Hinzufügen eines Zeitstempels
                 const cacheBuster = new Date().getTime();
-                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=description&query=${encodeURIComponent(query)}&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
+                const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=complete&query=${encodeURIComponent(query)}&_=${cacheBuster}`;
 
                 fetch(url)
                     .then(response => {
@@ -197,8 +293,6 @@
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Erhaltene Vorschläge:', data); // Debug-Logging
-                        
                         currentSuggestions = data;
                         currentSuggestionIndex = -1;
                         
@@ -208,18 +302,37 @@
                             data.forEach((item, index) => {
                                 const div = document.createElement('div');
                                 div.className = 'suggestion-item';
-                                div.dataset.index = index;
+                                div.setAttribute('tabindex', '0'); // Für Tastaturnavigation
                                 
-                                // Anzahl der Verwendungen anzeigen
-                                if (item.count && item.count > 1) {
-                                    div.innerHTML = `${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
-                                } else {
-                                    div.textContent = item.description;
-                                }
+                                // Formatierter Vorschlag mit mehr Details
+                                div.innerHTML = `
+                                    <div class="suggestion-main">
+                                        <span class="suggestion-description">${item.description}</span>
+                                        <span class="suggestion-value">${parseFloat(item.value).toFixed(2)} €</span>
+                                    </div>
+                                    <div class="suggestion-details">
+                                        <span class="suggestion-category">
+                                            <span class="category-color-dot" style="background-color: ${item.category_color || '#ccc'}"></span>
+                                            ${item.category_name || 'Keine Kategorie'}
+                                        </span>
+                                        ${item.project_name ? `<span class="suggestion-project">${item.project_name}</span>` : ''}
+                                        <span class="suggestion-count">${item.count}x verwendet</span>
+                                    </div>
+                                `;
                                 
-                                div.addEventListener('click', () => {
-                                    applyDescriptionSuggestion(item);
+                                // Event-Listener für Klick
+                                div.addEventListener('click', function() {
+                                    applySuggestion(item);
                                 });
+                                
+                                // Event-Listener für Tastatur (Enter)
+                                div.addEventListener('keydown', function(e) {
+                                    if (e.key === 'Enter') {
+                                        applySuggestion(item);
+                                        e.preventDefault();
+                                    }
+                                });
+                                
                                 descriptionSuggestions.appendChild(div);
                             });
                             
@@ -234,31 +347,10 @@
                     });
             }
 
-            // Funktion zum Anwenden eines Beschreibungsvorschlags
-            function applyDescriptionSuggestion(item) {
-                descriptionInput.value = item.description;
-                
-                // Betrag übernehmen, wenn vorhanden
-                if (item.value) {
-                    valueInput.value = Math.abs(item.value);
-                }
-                
-                // Kategorie auswählen, wenn vorhanden und keine ausgewählt ist
-                if (item.category_id && categorySelect.value === '') {
-                    categorySelect.value = item.category_id;
-                }
-                
-                // Projekt auswählen, wenn vorhanden und keins ausgewählt ist
-                if (item.project_id && projectSelect.value === '') {
-                    projectSelect.value = item.project_id;
-                }
-                
-                descriptionSuggestions.style.display = 'none';
-            }
-
             // Funktion für Betragsvorschläge
             function fetchValueSuggestions() {
                 const categoryId = categorySelect.value;
+                
                 if (!categoryId) {
                     valueSuggestions.style.display = 'none';
                     return;
@@ -269,7 +361,7 @@
                 // Cache-Busting durch Hinzufügen eines Zeitstempels
                 const cacheBuster = new Date().getTime();
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
-                
+
                 fetch(url)
                     .then(response => {
                         if (!response.ok) {
@@ -278,30 +370,44 @@
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Erhaltene Wertvorschläge:', data); // Debug-Logging
-                        
-                        currentSuggestions = data;
-                        currentSuggestionIndex = -1;
-                        
                         valueSuggestions.innerHTML = '';
                         
                         if (data && data.length > 0) {
-                            data.forEach((item, index) => {
+                            data.forEach(item => {
                                 const div = document.createElement('div');
                                 div.className = 'suggestion-item';
-                                div.dataset.index = index;
+                                div.setAttribute('tabindex', '0'); // Für Tastaturnavigation
                                 
-                                // Formatierter Betrag mit Beschreibung und Häufigkeit
-                                if (item.count && item.count > 1) {
-                                    div.innerHTML = `${Math.abs(item.value).toFixed(2)} € - ${item.description} <span class="badge bg-secondary">${item.count}x</span>`;
-                                } else {
-                                    div.textContent = `${Math.abs(item.value).toFixed(2)} € - ${item.description}`;
-                                }
+                                // Formatierter Vorschlag mit mehr Details
+                                div.innerHTML = `
+                                    <div class="suggestion-main">
+                                        <span class="suggestion-value">${parseFloat(item.value).toFixed(2)} €</span>
+                                        <span class="suggestion-count">${item.count}x verwendet</span>
+                                    </div>
+                                    ${item.description ? `<div class="suggestion-details">${item.description}</div>` : ''}
+                                `;
                                 
-                                div.addEventListener('click', () => {
-                                    valueInput.value = Math.abs(item.value);
+                                // Event-Listener für Klick
+                                div.addEventListener('click', function() {
+                                    valueInput.value = parseFloat(item.value).toFixed(2);
+                                    if (item.description && !descriptionInput.value) {
+                                        descriptionInput.value = item.description;
+                                    }
                                     valueSuggestions.style.display = 'none';
                                 });
+                                
+                                // Event-Listener für Tastatur (Enter)
+                                div.addEventListener('keydown', function(e) {
+                                    if (e.key === 'Enter') {
+                                        valueInput.value = parseFloat(item.value).toFixed(2);
+                                        if (item.description && !descriptionInput.value) {
+                                            descriptionInput.value = item.description;
+                                        }
+                                        valueSuggestions.style.display = 'none';
+                                        e.preventDefault();
+                                    }
+                                });
+                                
                                 valueSuggestions.appendChild(div);
                             });
                             
@@ -311,143 +417,98 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Fehler beim Abrufen der Wertvorschläge:', error);
+                        console.error('Fehler beim Abrufen der Vorschläge:', error);
                         valueSuggestions.style.display = 'none';
                     });
             }
 
-            // Tastaturnavigation für Vorschläge
-            function handleKeyNavigation(e, suggestionContainer) {
-                const suggestionItems = suggestionContainer.querySelectorAll('.suggestion-item');
-                
-                if (!suggestionItems.length || suggestionContainer.style.display === 'none') {
-                    return;
-                }
-                
-                // Pfeil nach unten
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    currentSuggestionIndex = Math.min(currentSuggestionIndex + 1, suggestionItems.length - 1);
-                    highlightSuggestion(suggestionItems);
-                }
-                
-                // Pfeil nach oben
-                else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    currentSuggestionIndex = Math.max(currentSuggestionIndex - 1, 0);
-                    highlightSuggestion(suggestionItems);
-                }
-                
-                // Enter-Taste
-                else if (e.key === 'Enter' && currentSuggestionIndex >= 0) {
-                    e.preventDefault();
-                    suggestionItems[currentSuggestionIndex].click();
-                }
-                
-                // Escape-Taste
-                else if (e.key === 'Escape') {
-                    suggestionContainer.style.display = 'none';
-                    currentSuggestionIndex = -1;
-                }
-            }
-            
-            // Markiert den ausgewählten Vorschlag
-            function highlightSuggestion(items) {
-                items.forEach((item, index) => {
-                    if (index === currentSuggestionIndex) {
-                        item.classList.add('bg-primary', 'text-white');
-                        item.scrollIntoView({ block: 'nearest' });
-                    } else {
-                        item.classList.remove('bg-primary', 'text-white');
-                    }
-                });
-            }
-
-            // Event-Listener
-            descriptionInput.addEventListener('input', () => {
+            // Event-Listener für Beschreibungseingabe
+            descriptionInput.addEventListener('input', function() {
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(fetchDescriptionSuggestions, 300);
-            });
-            
-            descriptionInput.addEventListener('keydown', (e) => {
-                handleKeyNavigation(e, descriptionSuggestions);
+                debounceTimer = setTimeout(fetchCompleteSuggestions, 300);
             });
 
-            valueInput.addEventListener('focus', fetchValueSuggestions);
-            
-            valueInput.addEventListener('keydown', (e) => {
-                handleKeyNavigation(e, valueSuggestions);
-            });
-
-            // Event-Listener für Kategorie-Änderungen
+            // Event-Listener für Kategorieauswahl
             categorySelect.addEventListener('change', function() {
-                // Kategorie-Typ (Einnahme/Ausgabe) aus dem data-type Attribut der ausgewählten Option holen
-                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-                const categoryType = selectedOption.getAttribute('data-type');
+                updateCategoryDescription();
                 
-                // Radio-Button basierend auf Kategorie-Typ setzen
-                if (categoryType === 'income') {
-                    typeIncomeRadio.checked = true;
-                } else {
-                    typeExpenseRadio.checked = true;
-                }
+                // Betragsvorschläge anzeigen, wenn eine Kategorie ausgewählt wird
+                fetchValueSuggestions();
                 
-                // Hinweistext aktualisieren
-                updateCategoryType();
-                
-                // Vorschläge aktualisieren
-                if (descriptionInput.value.length >= 2) {
-                    fetchDescriptionSuggestions();
-                }
-                if (document.activeElement === valueInput) {
-                    fetchValueSuggestions();
-                }
-            });
-
-            // Event-Listener für Projekt-Änderungen
-            projectSelect.addEventListener('change', () => {
+                // Wenn Beschreibung bereits eingegeben wurde, auch Beschreibungsvorschläge aktualisieren
                 if (descriptionInput.value.trim().length >= 2) {
-                    fetchDescriptionSuggestions();
+                    fetchCompleteSuggestions();
                 }
-                if (document.activeElement === valueInput) {
+            });
+
+            // Event-Listener für Fokus auf Betragseingabe
+            valueInput.addEventListener('focus', function() {
+                if (categorySelect.value) {
                     fetchValueSuggestions();
                 }
             });
 
-            // Event-Listener für Radio-Button-Änderungen
-            typeIncomeRadio.addEventListener('change', updateCategoryType);
-            typeExpenseRadio.addEventListener('change', updateCategoryType);
-
-            // Initialen Zustand setzen
-            updateCategoryType();
-
-            // Event-Listener für Formular-Absendung
-            document.querySelector('form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Betrag als positiv oder negativ setzen basierend auf dem ausgewählten Typ
-                const amount = parseFloat(valueInput.value);
-                if (amount <= 0) {
-                    alert('Bitte geben Sie einen positiven Betrag ein.');
-                    return;
+            // Tastaturnavigation für Vorschläge
+            descriptionInput.addEventListener('keydown', function(e) {
+                if (descriptionSuggestions.style.display === 'block') {
+                    const items = descriptionSuggestions.querySelectorAll('.suggestion-item');
+                    
+                    if (e.key === 'ArrowDown') {
+                        currentSuggestionIndex = Math.min(currentSuggestionIndex + 1, items.length - 1);
+                        items[currentSuggestionIndex].focus();
+                        e.preventDefault();
+                    } else if (e.key === 'ArrowUp') {
+                        if (currentSuggestionIndex > 0) {
+                            currentSuggestionIndex--;
+                            items[currentSuggestionIndex].focus();
+                        } else {
+                            currentSuggestionIndex = -1;
+                            descriptionInput.focus();
+                        }
+                        e.preventDefault();
+                    } else if (e.key === 'Escape') {
+                        descriptionSuggestions.style.display = 'none';
+                        currentSuggestionIndex = -1;
+                        e.preventDefault();
+                    } else if (e.key === 'Enter' && currentSuggestionIndex >= 0) {
+                        applySuggestion(currentSuggestions[currentSuggestionIndex]);
+                        e.preventDefault();
+                    }
                 }
-                
-                // Wenn Ausgabe ausgewählt ist, Betrag negativ machen
-                if (typeExpenseRadio.checked) {
-                    valueInput.value = -amount;
-                }
-                
-                // Formular absenden
-                this.submit();
             });
 
-            // Klick außerhalb schließt Vorschläge
-            document.addEventListener('click', (e) => {
+            // Klick außerhalb der Vorschläge schließt diese
+            document.addEventListener('click', function(e) {
                 if (!descriptionInput.contains(e.target) && !descriptionSuggestions.contains(e.target)) {
                     descriptionSuggestions.style.display = 'none';
                 }
+                
                 if (!valueInput.contains(e.target) && !valueSuggestions.contains(e.target)) {
                     valueSuggestions.style.display = 'none';
+                }
+            });
+            
+            // Initialisierung
+            updateCategoryDescription();
+
+            // Formular-Submit-Handler hinzufügen
+            document.querySelector('form').addEventListener('submit', function(e) {
+                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+                if (selectedOption && selectedOption.dataset.type) {
+                    const type = selectedOption.dataset.type;
+                    const value = parseFloat(valueInput.value);
+                    
+                    if (!isNaN(value)) {
+                        // Stelle sicher, dass der Betrag positiv ist
+                        const absValue = Math.abs(value);
+                        
+                        // Setze den Wert basierend auf dem Kategorietyp
+                        if (type === 'income') {
+                            valueInput.value = absValue; // Einnahmen sind positiv
+                        } else {
+                            valueInput.value = -absValue; // Ausgaben sind negativ
+                        }
+                    }
                 }
             });
         });

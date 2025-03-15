@@ -572,11 +572,23 @@ class ExpenseController extends BaseController {
 
         switch ($field) {
             case 'description':
-                // Verbesserte Abfrage für Beschreibungsvorschläge mit mehr Kontext
-                $sql = 'SELECT DISTINCT e.description, ABS(e.value) as value, e.category_id, 
+                // Verbesserte Abfrage für Beschreibungsvorschläge mit vollständigem Kontext
+                $sql = 'SELECT DISTINCT e.description, ABS(e.value) as value, e.category_id, e.project_id,
+                        c.name as category_name, c.color as category_color, c.type as category_type,
+                        p.name as project_name,
                         (SELECT COUNT(*) FROM expenses e2 WHERE e2.description = e.description) as count
                        FROM expenses e
+                       JOIN categories c ON e.category_id = c.id
+                       LEFT JOIN projects p ON e.project_id = p.id
                        WHERE e.description LIKE :query';
+                
+                // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
+                $userId = $this->session->getUserId();
+                if ($userId) {
+                    $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+                    $params[':user_id'] = $userId;
+                }
+                
                 if ($category_id) {
                     $sql .= ' AND e.category_id = :category_id';
                     $params[':category_id'] = $category_id;
@@ -585,16 +597,27 @@ class ExpenseController extends BaseController {
                     $sql .= ' AND e.project_id = :project_id';
                     $params[':project_id'] = $project_id;
                 }
-                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
+                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 10'; // Sortierung nach Häufigkeit und Datum
                 $params[':query'] = '%' . $query . '%';
                 break;
 
             case 'value':
-                // Verbesserte Abfrage für Betragsvorschläge mit Beschreibung und Häufigkeit
-                $sql = 'SELECT DISTINCT ABS(e.value) as value, e.description, 
+                // Verbesserte Abfrage für Betragsvorschläge mit vollständigem Kontext
+                $sql = 'SELECT DISTINCT ABS(e.value) as value, e.description, e.category_id, e.project_id,
+                        c.name as category_name, c.color as category_color, c.type as category_type,
+                        p.name as project_name,
                         (SELECT COUNT(*) FROM expenses e2 WHERE ABS(e2.value) = ABS(e.value) AND e2.category_id = e.category_id) as count
                        FROM expenses e
+                       JOIN categories c ON e.category_id = c.id
+                       LEFT JOIN projects p ON e.project_id = p.id
                        WHERE 1=1';
+                
+                // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
+                $userId = $this->session->getUserId();
+                if ($userId) {
+                    $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+                    $params[':user_id'] = $userId;
+                }
                 
                 if ($category_id) {
                     $sql .= ' AND e.category_id = :category_id';
@@ -604,19 +627,50 @@ class ExpenseController extends BaseController {
                     $sql .= ' AND e.project_id = :project_id';
                     $params[':project_id'] = $project_id;
                 }
-                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 8'; // Sortierung nach Häufigkeit und Datum
+                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 10'; // Sortierung nach Häufigkeit und Datum
                 break;
                 
             case 'category':
-                // Neue Abfrage für Kategorievorschläge basierend auf der Beschreibung
+                // Verbesserte Abfrage für Kategorievorschläge basierend auf der Beschreibung
                 $sql = 'SELECT DISTINCT c.id, c.name, c.color, c.type, c.description,
-                        (SELECT COUNT(*) FROM expenses e WHERE e.category_id = c.id AND e.description LIKE :query) as relevance
+                        (SELECT COUNT(*) FROM expenses e WHERE e.category_id = c.id AND e.description LIKE :query) as relevance,
+                        (SELECT AVG(ABS(e.value)) FROM expenses e WHERE e.category_id = c.id AND e.description LIKE :query) as avg_value
                        FROM categories c
                        JOIN expenses e ON c.id = e.category_id
-                       WHERE e.description LIKE :query
-                       GROUP BY c.id
+                       WHERE e.description LIKE :query';
+                
+                // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
+                $userId = $this->session->getUserId();
+                if ($userId) {
+                    $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+                    $params[':user_id'] = $userId;
+                }
+                
+                $sql .= ' GROUP BY c.id
                        ORDER BY relevance DESC
                        LIMIT 5';
+                $params[':query'] = '%' . $query . '%';
+                break;
+                
+            case 'complete':
+                // Neue Abfrage für vollständige Vorschläge (alle Felder)
+                $sql = 'SELECT e.description, ABS(e.value) as value, e.category_id, e.project_id,
+                        c.name as category_name, c.color as category_color, c.type as category_type,
+                        p.name as project_name,
+                        (SELECT COUNT(*) FROM expenses e2 WHERE e2.description = e.description) as count
+                       FROM expenses e
+                       JOIN categories c ON e.category_id = c.id
+                       LEFT JOIN projects p ON e.project_id = p.id
+                       WHERE e.description LIKE :query';
+                
+                // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
+                $userId = $this->session->getUserId();
+                if ($userId) {
+                    $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+                    $params[':user_id'] = $userId;
+                }
+                
+                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 10';
                 $params[':query'] = '%' . $query . '%';
                 break;
         }
