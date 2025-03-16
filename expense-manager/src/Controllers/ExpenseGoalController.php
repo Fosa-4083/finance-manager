@@ -23,6 +23,24 @@ class ExpenseGoalController extends BaseController {
         ');
         $availableYears = $stmtYears->fetchAll(PDO::FETCH_COLUMN);
         
+        // Wenn keine Jahre gefunden wurden, aktuelles Jahr als Standard verwenden
+        if (empty($availableYears)) {
+            $availableYears[] = date('Y');
+        }
+        
+        // Benutzer-ID aus der Session holen
+        $userId = $this->session->getUserId();
+        
+        // Alle Kategorien abrufen
+        $stmtCategories = $this->db->prepare('
+            SELECT c.id, c.name, c.color, c.type 
+            FROM categories c 
+            WHERE (c.user_id = ? OR c.user_id IS NULL)
+            ORDER BY c.type, c.name
+        ');
+        $stmtCategories->execute([$userId]);
+        $allCategories = $stmtCategories->fetchAll(PDO::FETCH_ASSOC);
+        
         // SQL-Abfrage für Ausgabenziele
         $sql = '
             SELECT 
@@ -32,6 +50,7 @@ class ExpenseGoalController extends BaseController {
                 eg.goal,
                 c.name as category_name,
                 c.color,
+                c.type as category_type,
                 COALESCE(SUM(CASE 
                     WHEN DATE_FORMAT(e.date, "%Y") = eg.year AND (eg.year < DATE_FORMAT(NOW(), "%Y") OR (eg.year = DATE_FORMAT(NOW(), "%Y") AND DAYOFYEAR(e.date) <= DAYOFYEAR(NOW()))
                     ) THEN e.value 
@@ -57,7 +76,7 @@ class ExpenseGoalController extends BaseController {
         // Gruppierung und Sortierung
         $sql .= '
             GROUP BY eg.id
-            ORDER BY eg.year DESC, c.name
+            ORDER BY eg.year DESC, c.type, c.name
         ';
         
         // Abfrage ausführen
@@ -75,13 +94,76 @@ class ExpenseGoalController extends BaseController {
             $goal['color'] = isset($goal['color']) ? $goal['color'] : '#cccccc';
             $goal['category_name'] = isset($goal['category_name']) ? $goal['category_name'] : 'Unbekannt';
             
-            // Kategorie-Typ aus der Datenbank holen
-            $stmtType = $this->db->prepare('SELECT type FROM categories WHERE id = ?');
-            $stmtType->execute([$goal['category_id']]);
-            $categoryType = $stmtType->fetchColumn();
-            $goal['category_type'] = $categoryType ?: 'expense';
-            
             $goalsByYear[$goal['year']][$goal['category_type']][] = $goal;
+        }
+        
+        // Für jedes Jahr und jede Kategorie prüfen, ob ein Ziel existiert
+        // Wenn nicht, ein leeres Ziel hinzufügen
+        $yearsToShow = $selectedYear ? [$selectedYear] : $availableYears;
+        
+        foreach ($yearsToShow as $year) {
+            if (!isset($goalsByYear[$year])) {
+                $goalsByYear[$year] = [
+                    'income' => [],
+                    'expense' => []
+                ];
+            }
+            
+            // Für jede Kategorie prüfen, ob ein Ziel für dieses Jahr existiert
+            foreach ($allCategories as $category) {
+                $categoryExists = false;
+                $categoryType = $category['type'];
+                
+                // Prüfen, ob die Kategorie bereits in den Zielen für dieses Jahr existiert
+                if (isset($goalsByYear[$year][$categoryType])) {
+                    foreach ($goalsByYear[$year][$categoryType] as $goal) {
+                        if ($goal['category_id'] == $category['id']) {
+                            $categoryExists = true;
+                            break;
+                        }
+                    }
+                } else {
+                    $goalsByYear[$year][$categoryType] = [];
+                }
+                
+                // Wenn die Kategorie nicht existiert, ein leeres Ziel hinzufügen
+                if (!$categoryExists) {
+                    // Aktuellen Wert für diese Kategorie in diesem Jahr abrufen
+                    $stmtCurrentValue = $this->db->prepare('
+                        SELECT COALESCE(SUM(value), 0) as current_value
+                        FROM expenses
+                        WHERE category_id = ? AND DATE_FORMAT(date, "%Y") = ?
+                    ');
+                    $stmtCurrentValue->execute([$category['id'], $year]);
+                    $currentValue = $stmtCurrentValue->fetchColumn();
+                    
+                    $goalsByYear[$year][$categoryType][] = [
+                        'id' => null,
+                        'category_id' => $category['id'],
+                        'year' => $year,
+                        'goal' => 0,
+                        'category_name' => $category['name'],
+                        'color' => $category['color'],
+                        'category_type' => $categoryType,
+                        'current_value' => $currentValue,
+                        'total_value' => $currentValue,
+                        'is_empty_goal' => true // Markierung für leere Ziele
+                    ];
+                }
+            }
+            
+            // Sortieren der Kategorien nach Namen
+            if (isset($goalsByYear[$year]['income'])) {
+                usort($goalsByYear[$year]['income'], function($a, $b) {
+                    return strcmp($a['category_name'], $b['category_name']);
+                });
+            }
+            
+            if (isset($goalsByYear[$year]['expense'])) {
+                usort($goalsByYear[$year]['expense'], function($a, $b) {
+                    return strcmp($a['category_name'], $b['category_name']);
+                });
+            }
         }
         
         // Zusammenfassung pro Jahr und Typ berechnen
@@ -136,7 +218,20 @@ class ExpenseGoalController extends BaseController {
     }
 
     public function create() {
-        $stmt = $this->db->query('SELECT * FROM categories ORDER BY name');
+        // Vorausgewählte Kategorie und Jahr aus der URL holen
+        $preselectedCategoryId = isset($_GET['category_id']) ? $_GET['category_id'] : null;
+        $preselectedYear = isset($_GET['year']) ? $_GET['year'] : date('Y');
+        
+        // Benutzer-ID aus der Session holen
+        $userId = $this->session->getUserId();
+        
+        // Kategorien aus der Datenbank laden
+        $stmt = $this->db->prepare('
+            SELECT * FROM categories 
+            WHERE (user_id = ? OR user_id IS NULL)
+            ORDER BY type, name
+        ');
+        $stmt->execute([$userId]);
         $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         include VIEW_PATH . 'expense-goals/create.php';

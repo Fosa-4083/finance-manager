@@ -23,8 +23,8 @@
                                 <select class="form-select" id="category_id" name="category_id" required>
                                     <option value="">Bitte wählen...</option>
                                     <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo $category['id']; ?>">
-                                        <?php echo htmlspecialchars($category['name']); ?>
+                                    <option value="<?php echo $category['id']; ?>" <?php echo (isset($preselectedCategoryId) && $preselectedCategoryId == $category['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($category['name']); ?> (<?php echo $category['type'] === 'income' ? 'Einnahme' : 'Ausgabe'; ?>)
                                     </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -37,7 +37,7 @@
                                     $currentYear = date('Y');
                                     for ($year = $currentYear - 1; $year <= $currentYear + 5; $year++) {
                                         echo '<option value="' . $year . '"' . 
-                                             ($year === $currentYear ? ' selected' : '') . '>' . 
+                                             ((isset($preselectedYear) && $preselectedYear == $year) ? ' selected' : '') . '>' . 
                                              $year . '</option>';
                                     }
                                     ?>

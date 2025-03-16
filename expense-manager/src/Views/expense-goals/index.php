@@ -72,7 +72,7 @@
                 </a>
             </div>
         </div>
-    </div>
+        </div>
 
     <div class="container">
         <!-- Jahr-Filter -->
@@ -159,6 +159,12 @@
                                             } else {
                                                 $progressClass = 'bg-danger';
                                             }
+                                            
+                                            // Wenn kein Ziel gesetzt ist (leeres Ziel)
+                                            if (isset($goal['is_empty_goal']) && $goal['is_empty_goal']) {
+                                                $progressClass = 'bg-secondary';
+                                                $percentage = 0;
+                                            }
                                             ?>
                                             <div class="progress">
                                                 <div class="progress-bar <?= $progressClass; ?>" 
@@ -173,17 +179,26 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group">
-                                                <a href="<?php echo \Utils\Path::url('/expense-goals/edit?id=' . $goal['id']); ?>" class="btn btn-primary btn-action" title="Bearbeiten">
-                                                    <i class="bi bi-pencil"></i>
-                                                </a>
-                                                <form action="<?php echo \Utils\Path::url('/expense-goals/delete'); ?>" method="POST" class="d-inline">
-                                                    <input type="hidden" name="id" value="<?= $goal['id'] ?>">
-                                                    <button type="submit" class="btn btn-danger btn-action" 
-                                                            onclick="return confirm('Sind Sie sicher, dass Sie dieses Ziel löschen möchten?')"
-                                                            title="Löschen">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
+                                                <?php if (isset($goal['is_empty_goal']) && $goal['is_empty_goal']): ?>
+                                                    <!-- Ziel erstellen Button für leere Ziele -->
+                                                    <a href="<?php echo \Utils\Path::url('/expense-goals/create?category_id=' . $goal['category_id'] . '&year=' . $goal['year']); ?>" 
+                                                       class="btn btn-success btn-action" title="Ziel erstellen">
+                                                        <i class="bi bi-plus-lg"></i>
+                                                    </a>
+                                                <?php else: ?>
+                                                    <!-- Bearbeiten/Löschen Buttons für existierende Ziele -->
+                                                    <a href="<?php echo \Utils\Path::url('/expense-goals/edit?id=' . $goal['id']); ?>" class="btn btn-primary btn-action" title="Bearbeiten">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <form action="<?php echo \Utils\Path::url('/expense-goals/delete'); ?>" method="POST" class="d-inline">
+                                                        <input type="hidden" name="id" value="<?= $goal['id'] ?>">
+                                                        <button type="submit" class="btn btn-danger btn-action" 
+                                                                onclick="return confirm('Sind Sie sicher, dass Sie dieses Ziel löschen möchten?')"
+                                                                title="Löschen">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>
@@ -237,19 +252,19 @@
                         </h4>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
+                    <thead>
+                        <tr>
                                         <th class="border-0">Kategorie</th>
                                         <th class="border-0">Ziel</th>
                                         <th class="border-0">Aktueller Stand</th>
                                         <th class="border-0">Fortschritt</th>
                                         <th class="border-0 text-end">Aktionen</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        </tr>
+                    </thead>
+                    <tbody>
                                     <?php foreach ($typeGoals['expense'] as $goal): ?>
-                                    <tr>
-                                        <td>
+                        <tr>
+                            <td>
                                             <span class="category-badge" style="background-color: <?= htmlspecialchars($goal['color']) ?>">
                                                 <?= htmlspecialchars($goal['category_name']) ?>
                                             </span>
@@ -269,6 +284,12 @@
                                             } else {
                                                 $progressClass = 'bg-success';
                                             }
+                                            
+                                            // Wenn kein Ziel gesetzt ist (leeres Ziel)
+                                            if (isset($goal['is_empty_goal']) && $goal['is_empty_goal']) {
+                                                $progressClass = 'bg-secondary';
+                                                $percentage = 0;
+                                            }
                                             ?>
                                             <div class="progress">
                                                 <div class="progress-bar <?= $progressClass; ?>" 
@@ -283,17 +304,26 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group">
-                                                <a href="<?php echo \Utils\Path::url('/expense-goals/edit?id=' . $goal['id']); ?>" class="btn btn-primary btn-action" title="Bearbeiten">
-                                                    <i class="bi bi-pencil"></i>
-                                                </a>
-                                                <form action="<?php echo \Utils\Path::url('/expense-goals/delete'); ?>" method="POST" class="d-inline">
-                                                    <input type="hidden" name="id" value="<?= $goal['id'] ?>">
-                                                    <button type="submit" class="btn btn-danger btn-action" 
-                                                            onclick="return confirm('Sind Sie sicher, dass Sie dieses Ausgabenziel löschen möchten?')"
-                                                            title="Löschen">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
+                                                <?php if (isset($goal['is_empty_goal']) && $goal['is_empty_goal']): ?>
+                                                    <!-- Ziel erstellen Button für leere Ziele -->
+                                                    <a href="<?php echo \Utils\Path::url('/expense-goals/create?category_id=' . $goal['category_id'] . '&year=' . $goal['year']); ?>" 
+                                                       class="btn btn-success btn-action" title="Ziel erstellen">
+                                                        <i class="bi bi-plus-lg"></i>
+                                                    </a>
+                                                <?php else: ?>
+                                                    <!-- Bearbeiten/Löschen Buttons für existierende Ziele -->
+                                                    <a href="<?php echo \Utils\Path::url('/expense-goals/edit?id=' . $goal['id']); ?>" class="btn btn-primary btn-action" title="Bearbeiten">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <form action="<?php echo \Utils\Path::url('/expense-goals/delete'); ?>" method="POST" class="d-inline">
+                                                        <input type="hidden" name="id" value="<?= $goal['id'] ?>">
+                                                        <button type="submit" class="btn btn-danger btn-action" 
+                                                                onclick="return confirm('Sind Sie sicher, dass Sie dieses Ausgabenziel löschen möchten?')"
+                                                                title="Löschen">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>
@@ -367,18 +397,18 @@
                                 ?>
                                 <div class="progress">
                                     <div class="progress-bar <?= $yearProgressClass; ?>" 
-                                        role="progressbar" 
+                                         role="progressbar" 
                                         style="width: <?= min($yearPercentage, 100); ?>%"
                                         aria-valuenow="<?= $yearPercentage; ?>" 
-                                        aria-valuemin="0" 
-                                        aria-valuemax="100">
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
                                         <?= number_format($yearPercentage, 1); ?>%
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+            </div>
+        </div>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
