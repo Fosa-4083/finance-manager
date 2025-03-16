@@ -122,6 +122,9 @@
                                 'start_date', 'end_date', 'page', 'per_page'
                             ];
                             
+                            // Debug-Ausgabe
+                            error_log("URL-Parameter in edit.php: " . print_r($_GET, true));
+                            
                             foreach ($filterParams as $param) {
                                 if (isset($_GET[$param])) {
                                     echo '<input type="hidden" name="filter_' . $param . '" value="' . htmlspecialchars($_GET[$param]) . '">';

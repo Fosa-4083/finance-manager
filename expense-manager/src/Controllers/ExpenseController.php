@@ -381,6 +381,9 @@ class ExpenseController extends BaseController {
             exit;
         }
         
+        // Debug-Ausgabe
+        error_log("ExpenseController::edit - GET-Parameter: " . print_r($_GET, true));
+        
         $expense = new Expense();
         if ($expense->findById($id)) {
             // Kategorien abrufen
@@ -486,6 +489,9 @@ class ExpenseController extends BaseController {
             exit;
         }
         
+        // Debug-Ausgabe
+        error_log("ExpenseController::delete - GET-Parameter: " . print_r($_GET, true));
+        
         $expense = new Expense();
         if ($expense->findById($id)) {
             if ($expense->delete()) {
@@ -498,24 +504,8 @@ class ExpenseController extends BaseController {
         }
         
         // Filterparameter aus der URL extrahieren
-        $filterParams = [];
-        $filterParamNames = [
-            'period_type', 'month', 'year', 'category_id', 'project_id', 
-            'type', 'description_search', 'min_amount', 'max_amount',
-            'start_date', 'end_date', 'page', 'per_page'
-        ];
-        
-        foreach ($filterParamNames as $param) {
-            if (isset($_GET[$param])) {
-                $filterParams[$param] = $_GET[$param];
-            }
-        }
-        
-        // URL mit Filterparametern erstellen
-        $redirectUrl = \Utils\Path::url('/expenses');
-        if (!empty($filterParams)) {
-            $redirectUrl .= '?' . http_build_query($filterParams);
-        }
+        $filterParams = $this->extractFilterParams($_GET);
+        $redirectUrl = $this->buildRedirectUrl('/expenses', $filterParams);
         
         header('Location: ' . $redirectUrl);
         exit;
@@ -638,6 +628,9 @@ class ExpenseController extends BaseController {
                 $filterParams[$paramName] = $value;
             }
         }
+        
+        // Debug-Ausgabe
+        error_log("Extrahierte Filterparameter: " . print_r($filterParams, true));
         
         return $filterParams;
     }
