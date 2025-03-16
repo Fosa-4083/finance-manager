@@ -342,10 +342,30 @@
                                             <?= number_format(abs($expense['value']), 2, ',', '.'); ?> €
                                         </td>
                                         <td>
-                                            <a href="<?php echo \Utils\Path::url('/expenses/edit?id=' . $expense['id']); ?>" class="btn btn-sm btn-outline-primary">
+                                            <?php
+                                            // URL mit Filterparametern für die Aktionslinks erstellen
+                                            $filterQueryString = '';
+                                            $filterParams = [
+                                                'period_type', 'month', 'year', 'category_id', 'project_id', 
+                                                'type', 'description_search', 'min_amount', 'max_amount',
+                                                'start_date', 'end_date', 'page', 'per_page'
+                                            ];
+                                            
+                                            $filterParamsArray = [];
+                                            foreach ($filterParams as $param) {
+                                                if (isset($_GET[$param])) {
+                                                    $filterParamsArray[$param] = $_GET[$param];
+                                                }
+                                            }
+                                            
+                                            if (!empty($filterParamsArray)) {
+                                                $filterQueryString = '&' . http_build_query($filterParamsArray);
+                                            }
+                                            ?>
+                                            <a href="<?php echo \Utils\Path::url('/expenses/edit?id=' . $expense['id'] . $filterQueryString); ?>" class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="<?php echo \Utils\Path::url('/expenses/delete?id=' . $expense['id']); ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Wirklich löschen?')">
+                                            <a href="<?php echo \Utils\Path::url('/expenses/delete?id=' . $expense['id'] . $filterQueryString); ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Wirklich löschen?')">
                                                 <i class="bi bi-trash"></i>
                                             </a>
                                         </td>
@@ -575,8 +595,37 @@
         }
         
         document.addEventListener('DOMContentLoaded', function() {
-            // Typ-Filter aus URL-Parameter initialisieren
+            // URL-Parameter auslesen
             const urlParams = new URLSearchParams(window.location.search);
+            
+            // Zeitraum-Typ aus URL-Parameter initialisieren
+            const periodType = urlParams.get('period_type');
+            if (periodType) {
+                // Entsprechenden Button aktivieren
+                const periodTypeButton = document.querySelector(`.btn-group .btn[onclick="setPeriodType('${periodType}')"]`);
+                if (periodTypeButton) {
+                    // Alle Buttons auf outline-primary zurücksetzen
+                    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-outline-primary');
+                    });
+                    
+                    // Den Button für den aktuellen Zeitraum-Typ aktivieren
+                    periodTypeButton.classList.remove('btn-outline-primary');
+                    periodTypeButton.classList.add('btn-primary');
+                    
+                    // Entsprechenden Bereich einblenden, außer bei "all"
+                    document.getElementById('period-month').style.display = 'none';
+                    document.getElementById('period-year').style.display = 'none';
+                    document.getElementById('period-custom').style.display = 'none';
+                    
+                    if (periodType !== 'all') {
+                        document.getElementById('period-' + periodType).style.display = 'flex';
+                    }
+                }
+            }
+            
+            // Typ-Filter aus URL-Parameter initialisieren
             window.currentType = urlParams.get('type');
             
             // Checkboxen für Massenbearbeitung
