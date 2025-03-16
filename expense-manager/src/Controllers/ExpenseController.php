@@ -561,7 +561,10 @@ class ExpenseController extends BaseController {
     }
 
     public function getSuggestions() {
-        // Setze den Content-Type Header früh
+        // Puffer starten, um alle vorherigen Ausgaben zu erfassen und zu verwerfen
+        ob_start();
+        
+        // Setze den Content-Type Header
         header('Content-Type: application/json; charset=utf-8');
         
         try {
@@ -728,21 +731,39 @@ class ExpenseController extends BaseController {
                         if ($jsonResult === false) {
                             // Immer noch ein Fehler, gib ein leeres Array zurück
                             error_log("JSON-Encoding-Fehler nach Bereinigung: " . json_last_error_msg());
+                            
+                            // Verwerfe alle bisherigen Ausgaben
+                            ob_end_clean();
+                            
                             echo '[]';
                             exit;
                         }
                     }
                     
+                    // Verwerfe alle bisherigen Ausgaben
+                    ob_end_clean();
+                    
                     echo $jsonResult;
                 } catch (\PDOException $e) {
                     error_log("PDO-Fehler in getSuggestions: " . $e->getMessage());
+                    
+                    // Verwerfe alle bisherigen Ausgaben
+                    ob_end_clean();
+                    
                     echo json_encode(['error' => 'Datenbankfehler: ' . $e->getMessage()], $jsonOptions);
                 }
             } else {
+                // Verwerfe alle bisherigen Ausgaben
+                ob_end_clean();
+                
                 echo '[]';
             }
         } catch (\Exception $e) {
             error_log("Allgemeiner Fehler in getSuggestions: " . $e->getMessage());
+            
+            // Verwerfe alle bisherigen Ausgaben
+            ob_end_clean();
+            
             echo json_encode(['error' => 'Fehler: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
         

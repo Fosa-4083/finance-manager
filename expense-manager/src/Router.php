@@ -8,6 +8,7 @@ class Router {
     private $guestRoutes = [];
     private $db;
     private $basePath = '';
+    private $isApiRequest = false;
 
     public function __construct($db) {
         $this->db = $db;
@@ -20,6 +21,15 @@ class Router {
      */
     public function setBasePath($path) {
         $this->basePath = $path;
+    }
+    
+    /**
+     * Setzt, ob es sich um eine API-Anfrage handelt
+     * 
+     * @param bool $isApiRequest Gibt an, ob es sich um eine API-Anfrage handelt
+     */
+    public function setIsApiRequest($isApiRequest) {
+        $this->isApiRequest = $isApiRequest;
     }
 
     /**
@@ -59,7 +69,9 @@ class Router {
      */
     public function dispatch($uri) {
         // Debug-Ausgabe
-        echo "<!-- Debug Router: URI = " . htmlspecialchars($uri) . ", Basispfad = " . htmlspecialchars($this->basePath) . " -->";
+        if (!$this->isApiRequest) {
+            echo "<!-- Debug Router: URI = " . htmlspecialchars($uri) . ", Basispfad = " . htmlspecialchars($this->basePath) . " -->";
+        }
         
         // Basispfad aus URI entfernen, wenn vorhanden
         if (!empty($this->basePath) && strpos($uri, $this->basePath) === 0) {
@@ -72,7 +84,9 @@ class Router {
         }
         
         // Debug-Ausgabe nach Basispfad-Entfernung
-        echo "<!-- Debug Router: Bereinigter URI = " . htmlspecialchars($uri) . " -->";
+        if (!$this->isApiRequest) {
+            echo "<!-- Debug Router: Bereinigter URI = " . htmlspecialchars($uri) . " -->";
+        }
         
         // URI-Parameter extrahieren (z.B. /projects/edit?id=1)
         $path = parse_url($uri, PHP_URL_PATH);

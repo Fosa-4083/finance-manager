@@ -1,6 +1,12 @@
 <?php
-// Testausgabe, um zu überprüfen, ob diese Datei geladen wird
-echo "<!-- public/index.php wurde am " . date('Y-m-d H:i:s') . " aktualisiert -->";
+// Prüfen, ob die Anfrage an die Vorschlagsroute geht
+$isApiRequest = strpos($_SERVER['REQUEST_URI'], '/expenses/suggestions') !== false;
+
+// Debug-Ausgaben nur anzeigen, wenn es keine API-Anfrage ist
+if (!$isApiRequest) {
+    // Testausgabe, um zu überprüfen, ob diese Datei geladen wird
+    echo "<!-- public/index.php wurde am " . date('Y-m-d H:i:s') . " aktualisiert -->";
+}
 
 // Konfiguration laden
 require_once __DIR__ . '/../config/config.php';
@@ -49,11 +55,17 @@ $session = Session::getInstance();
 try {
     // Konfiguration laden und anzeigen (nur für Debugging)
     $config = require __DIR__ . '/../config/database.php';
-    echo "<!-- Datenbank-Konfiguration: " . htmlspecialchars(print_r($config, true)) . " -->";
+    
+    if (!$isApiRequest) {
+        echo "<!-- Datenbank-Konfiguration: " . htmlspecialchars(print_r($config, true)) . " -->";
+    }
     
     $db = new Database();
-    $dbInfo = "<!-- MariaDB-Verbindung hergestellt. Datenbank: " . $db->getDbName() . " -->";
-    echo $dbInfo;
+    
+    if (!$isApiRequest) {
+        $dbInfo = "<!-- MariaDB-Verbindung hergestellt. Datenbank: " . $db->getDbName() . " -->";
+        echo $dbInfo;
+    }
     
     // Prüfen, ob der Benutzer bereits angemeldet ist
     if (!$session->isLoggedIn()) {
@@ -75,23 +87,33 @@ try {
                 $user->saveRememberToken($newToken);
                 $session->setRememberMeCookie($user->getId(), $newToken);
                 
-                echo "<!-- Benutzer wurde über Remember-Me-Cookie angemeldet: " . $user->getEmail() . " -->";
+                if (!$isApiRequest) {
+                    echo "<!-- Benutzer wurde über Remember-Me-Cookie angemeldet: " . $user->getEmail() . " -->";
+                }
             } else {
                 // Ungültiges Token, Cookie löschen
                 $session->clearRememberMeCookie();
-                echo "<!-- Ungültiges Remember-Me-Cookie wurde gelöscht -->";
+                
+                if (!$isApiRequest) {
+                    echo "<!-- Ungültiges Remember-Me-Cookie wurde gelöscht -->";
+                }
             }
         }
     }
 } catch (\PDOException $e) {
-    echo "<!-- Datenbankfehler: " . htmlspecialchars($e->getMessage()) . " -->";
+    if (!$isApiRequest) {
+        echo "<!-- Datenbankfehler: " . htmlspecialchars($e->getMessage()) . " -->";
+    }
     die("Datenbankverbindung konnte nicht hergestellt werden. Bitte überprüfen Sie die Konfiguration.");
 } catch (\Exception $e) {
-    echo "<!-- Fehler: " . htmlspecialchars($e->getMessage()) . " -->";
+    if (!$isApiRequest) {
+        echo "<!-- Fehler: " . htmlspecialchars($e->getMessage()) . " -->";
+    }
     // Fehler beim Verarbeiten des Remember-Me-Cookies sollte die Anwendung nicht blockieren
 }
 
 $router = new Router($db);
+$router->setIsApiRequest($isApiRequest);
 
 // Basispfad für die Anwendung setzen (z.B. /expense-manager)
 $basePath = '';
@@ -103,7 +125,9 @@ $router->setBasePath($basePath);
 Path::setBasePath($basePath);
 
 // Debug-Ausgabe für den Basispfad
-echo "<!-- Debug: Basispfad = " . htmlspecialchars($basePath) . ", Request URI = " . htmlspecialchars($requestUri) . " -->";
+if (!$isApiRequest) {
+    echo "<!-- Debug: Basispfad = " . htmlspecialchars($basePath) . ", Request URI = " . htmlspecialchars($requestUri) . " -->";
+}
 
 // Authentifizierungs-Routen (nur für Gäste)
 $router->addRoute('/login', 'Controllers\AuthController', 'showLoginForm', false, true);
