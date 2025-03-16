@@ -460,19 +460,8 @@ class ExpenseController extends BaseController {
                 $_SESSION['success'] = 'Buchung wurde erfolgreich aktualisiert.';
                 
                 // Filterparameter aus dem Formular extrahieren
-                $filterParams = [];
-                foreach ($_POST as $key => $value) {
-                    if (strpos($key, 'filter_') === 0) {
-                        $paramName = substr($key, 7); // Entferne 'filter_' vom Anfang
-                        $filterParams[$paramName] = $value;
-                    }
-                }
-                
-                // URL mit Filterparametern erstellen
-                $redirectUrl = \Utils\Path::url('/expenses');
-                if (!empty($filterParams)) {
-                    $redirectUrl .= '?' . http_build_query($filterParams);
-                }
+                $filterParams = $this->extractFilterParams($_POST);
+                $redirectUrl = $this->buildRedirectUrl('/expenses', $filterParams);
                 
                 header('Location: ' . $redirectUrl);
                 exit;
