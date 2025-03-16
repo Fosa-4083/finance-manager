@@ -100,8 +100,8 @@
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card">
-                    <div class="card-header">
-                        <h2>Buchung bearbeiten</h2>
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Buchung bearbeiten</h5>
                     </div>
                     <div class="card-body">
                         <?php if (isset($_SESSION['error'])): ?>
@@ -111,8 +111,23 @@
                             </div>
                         <?php endif; ?>
 
-                        <form action="<?php echo \Utils\Path::url('/expenses/update'); ?>" method="POST">
+                        <form action="<?php echo \Utils\Path::url('/expenses/update'); ?>" method="post">
                             <input type="hidden" name="id" value="<?= $expense['id']; ?>">
+                            
+                            <?php
+                            // Speichere alle Filter-Parameter aus der URL
+                            $filterParams = [
+                                'period_type', 'month', 'year', 'category_id', 'project_id', 
+                                'type', 'description_search', 'min_amount', 'max_amount',
+                                'start_date', 'end_date', 'page', 'per_page'
+                            ];
+                            
+                            foreach ($filterParams as $param) {
+                                if (isset($_GET[$param])) {
+                                    echo '<input type="hidden" name="filter_' . $param . '" value="' . htmlspecialchars($_GET[$param]) . '">';
+                                }
+                            }
+                            ?>
                             
                             <div class="mb-3">
                                 <label for="date" class="form-label">Datum</label>
@@ -216,7 +231,29 @@
                             </div>
                             
                             <div class="d-flex justify-content-between">
-                                <a href="<?php echo \Utils\Path::url('/expenses'); ?>" class="btn btn-secondary">Abbrechen</a>
+                                <?php
+                                // URL mit Filterparametern für die Abbrechen-Schaltfläche erstellen
+                                $cancelUrl = \Utils\Path::url('/expenses');
+                                $filterParams = [];
+                                
+                                // Liste der möglichen Filterparameter
+                                $filterParamNames = [
+                                    'period_type', 'month', 'year', 'category_id', 'project_id', 
+                                    'type', 'description_search', 'min_amount', 'max_amount',
+                                    'start_date', 'end_date', 'page', 'per_page'
+                                ];
+                                
+                                foreach ($filterParamNames as $param) {
+                                    if (isset($_GET[$param])) {
+                                        $filterParams[$param] = $_GET[$param];
+                                    }
+                                }
+                                
+                                if (!empty($filterParams)) {
+                                    $cancelUrl .= '?' . http_build_query($filterParams);
+                                }
+                                ?>
+                                <a href="<?php echo $cancelUrl; ?>" class="btn btn-secondary">Abbrechen</a>
                                 <button type="submit" class="btn btn-primary">Änderungen speichern</button>
                             </div>
                         </form>

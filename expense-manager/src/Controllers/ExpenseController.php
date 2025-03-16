@@ -349,7 +349,12 @@ class ExpenseController extends BaseController {
                 if ($expense->save()) {
                     $_SESSION['success'] = 'Buchung erfolgreich gespeichert.';
                     error_log("ExpenseController::store - Erfolg: Buchung gespeichert mit ID {$expense->id}");
-                    header('Location: ' . \Utils\Path::url('/expenses'));
+                    
+                    // Filterparameter aus dem Formular extrahieren
+                    $filterParams = $this->extractFilterParams($_POST);
+                    $redirectUrl = $this->buildRedirectUrl('/expenses', $filterParams);
+                    
+                    header('Location: ' . $redirectUrl);
                     exit;
                 } else {
                     $_SESSION['error'] = 'Fehler beim Speichern der Buchung.';
@@ -422,8 +427,8 @@ class ExpenseController extends BaseController {
         if (!$id || !$category_id || !$date || $value == 0) {
             $_SESSION['error'] = 'Bitte füllen Sie alle Pflichtfelder aus.';
             header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
-        exit;
-    }
+            exit;
+        }
 
         // Prüfen, ob die Kategorie existiert
         $stmt = $this->db->prepare('SELECT type FROM categories WHERE id = ?');
@@ -453,7 +458,23 @@ class ExpenseController extends BaseController {
             
             if ($expense->save()) {
                 $_SESSION['success'] = 'Buchung wurde erfolgreich aktualisiert.';
-                header('Location: ' . \Utils\Path::url('/expenses'));
+                
+                // Filterparameter aus dem Formular extrahieren
+                $filterParams = [];
+                foreach ($_POST as $key => $value) {
+                    if (strpos($key, 'filter_') === 0) {
+                        $paramName = substr($key, 7); // Entferne 'filter_' vom Anfang
+                        $filterParams[$paramName] = $value;
+                    }
+                }
+                
+                // URL mit Filterparametern erstellen
+                $redirectUrl = \Utils\Path::url('/expenses');
+                if (!empty($filterParams)) {
+                    $redirectUrl .= '?' . http_build_query($filterParams);
+                }
+                
+                header('Location: ' . $redirectUrl);
                 exit;
             } else {
                 $_SESSION['error'] = 'Fehler beim Aktualisieren der Buchung.';
@@ -487,7 +508,27 @@ class ExpenseController extends BaseController {
             $_SESSION['error'] = 'Buchung nicht gefunden.';
         }
         
-        header('Location: ' . \Utils\Path::url('/expenses'));
+        // Filterparameter aus der URL extrahieren
+        $filterParams = [];
+        $filterParamNames = [
+            'period_type', 'month', 'year', 'category_id', 'project_id', 
+            'type', 'description_search', 'min_amount', 'max_amount',
+            'start_date', 'end_date', 'page', 'per_page'
+        ];
+        
+        foreach ($filterParamNames as $param) {
+            if (isset($_GET[$param])) {
+                $filterParams[$param] = $_GET[$param];
+            }
+        }
+        
+        // URL mit Filterparametern erstellen
+        $redirectUrl = \Utils\Path::url('/expenses');
+        if (!empty($filterParams)) {
+            $redirectUrl .= '?' . http_build_query($filterParams);
+        }
+        
+        header('Location: ' . $redirectUrl);
         exit;
     }
     
@@ -506,13 +547,23 @@ class ExpenseController extends BaseController {
         // Validierung
         if (empty($project_id)) {
             $_SESSION['error'] = 'Bitte wählen Sie ein Projekt aus.';
-            header('Location: ' . \Utils\Path::url('/expenses'));
+            
+            // Filterparameter aus dem Formular extrahieren
+            $filterParams = $this->extractFilterParams($_POST);
+            $redirectUrl = $this->buildRedirectUrl('/expenses', $filterParams);
+            
+            header('Location: ' . $redirectUrl);
             exit;
         }
         
         if (empty($expense_ids) || !is_array($expense_ids)) {
             $_SESSION['error'] = 'Bitte wählen Sie mindestens eine Buchung aus.';
-            header('Location: ' . \Utils\Path::url('/expenses'));
+            
+            // Filterparameter aus dem Formular extrahieren
+            $filterParams = $this->extractFilterParams($_POST);
+            $redirectUrl = $this->buildRedirectUrl('/expenses', $filterParams);
+            
+            header('Location: ' . $redirectUrl);
             exit;
         }
         
@@ -521,7 +572,12 @@ class ExpenseController extends BaseController {
         $stmt->execute([$project_id]);
         if (!$stmt->fetch()) {
             $_SESSION['error'] = 'Das ausgewählte Projekt existiert nicht.';
-            header('Location: ' . \Utils\Path::url('/expenses'));
+            
+            // Filterparameter aus dem Formular extrahieren
+            $filterParams = $this->extractFilterParams($_POST);
+            $redirectUrl = $this->buildRedirectUrl('/expenses', $filterParams);
+            
+            header('Location: ' . $redirectUrl);
             exit;
         }
         
@@ -556,8 +612,62 @@ class ExpenseController extends BaseController {
             $_SESSION['error'] = 'Datenbankfehler: ' . $e->getMessage();
         }
         
-        header('Location: ' . \Utils\Path::url('/expenses'));
+        // Filterparameter aus dem Formular extrahieren
+        $filterParams = $this->extractFilterParams($_POST);
+        $redirectUrl = $this->buildRedirectUrl('/expenses', $filterParams);
+        
+        header('Location: ' . $redirectUrl);
         exit;
+    }
+    
+    /**
+     * Extrahiert Filterparameter aus einem Array (z.B. $_POST oder $_GET)
+     * 
+     * @param array $data Array mit Daten
+     * @return array Array mit Filterparametern
+     */
+    private function extractFilterParams($data) {
+        $filterParams = [];
+        
+        // Direkte Filterparameter
+        $filterParamNames = [
+            'period_type', 'month', 'year', 'category_id', 'project_id', 
+            'type', 'description_search', 'min_amount', 'max_amount',
+            'start_date', 'end_date', 'page', 'per_page'
+        ];
+        
+        foreach ($filterParamNames as $param) {
+            if (isset($data[$param])) {
+                $filterParams[$param] = $data[$param];
+            }
+        }
+        
+        // Filterparameter mit 'filter_' Präfix
+        foreach ($data as $key => $value) {
+            if (strpos($key, 'filter_') === 0) {
+                $paramName = substr($key, 7); // Entferne 'filter_' vom Anfang
+                $filterParams[$paramName] = $value;
+            }
+        }
+        
+        return $filterParams;
+    }
+    
+    /**
+     * Erstellt eine Redirect-URL mit Filterparametern
+     * 
+     * @param string $baseUrl Basis-URL
+     * @param array $filterParams Array mit Filterparametern
+     * @return string Vollständige URL mit Filterparametern
+     */
+    private function buildRedirectUrl($baseUrl, $filterParams) {
+        $redirectUrl = \Utils\Path::url($baseUrl);
+        
+        if (!empty($filterParams)) {
+            $redirectUrl .= '?' . http_build_query($filterParams);
+        }
+        
+        return $redirectUrl;
     }
 
     public function getSuggestions() {

@@ -54,7 +54,29 @@
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Ausgaben & Einnahmen</h1>
-            <a href="<?php echo \Utils\Path::url('/expenses/create'); ?>" class="btn btn-primary">
+            <?php
+            // URL mit Filterparametern für den "Neue Buchung"-Button erstellen
+            $newExpenseUrl = \Utils\Path::url('/expenses/create');
+            $filterParams = [];
+            
+            // Liste der möglichen Filterparameter
+            $filterParamNames = [
+                'period_type', 'month', 'year', 'category_id', 'project_id', 
+                'type', 'description_search', 'min_amount', 'max_amount',
+                'start_date', 'end_date', 'page', 'per_page'
+            ];
+            
+            foreach ($filterParamNames as $param) {
+                if (isset($_GET[$param])) {
+                    $filterParams[$param] = $_GET[$param];
+                }
+            }
+            
+            if (!empty($filterParams)) {
+                $newExpenseUrl .= '?' . http_build_query($filterParams);
+            }
+            ?>
+            <a href="<?php echo $newExpenseUrl; ?>" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Neue Buchung
             </a>
         </div>
@@ -243,6 +265,21 @@
                 <?php else: ?>
                     <!-- Massenbearbeitung -->
                     <form id="bulk-edit-form" action="<?php echo \Utils\Path::url('/expenses/bulk-update'); ?>" method="POST">
+                        <!-- Filterparameter als versteckte Felder -->
+                        <?php
+                        $filterParams = [
+                            'period_type', 'month', 'year', 'category_id', 'project_id', 
+                            'type', 'description_search', 'min_amount', 'max_amount',
+                            'start_date', 'end_date', 'page', 'per_page'
+                        ];
+                        
+                        foreach ($filterParams as $param) {
+                            if (isset($_GET[$param])) {
+                                echo '<input type="hidden" name="' . $param . '" value="' . htmlspecialchars($_GET[$param]) . '">';
+                            }
+                        }
+                        ?>
+                        
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <select id="bulk-project" name="project_id" class="form-select">
