@@ -422,9 +422,9 @@ class ExpenseController extends BaseController {
         if (!$id || !$category_id || !$date || $value == 0) {
             $_SESSION['error'] = 'Bitte füllen Sie alle Pflichtfelder aus.';
             header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
-            exit;
-        }
-        
+        exit;
+    }
+
         // Prüfen, ob die Kategorie existiert
         $stmt = $this->db->prepare('SELECT type FROM categories WHERE id = ?');
         $stmt->execute([$category_id]);
@@ -561,135 +561,191 @@ class ExpenseController extends BaseController {
     }
 
     public function getSuggestions() {
-        $query = $_GET['query'] ?? '';
-        $field = $_GET['field'] ?? '';
-        $category_id = $_GET['category_id'] ?? null;
-        $project_id = $_GET['project_id'] ?? null;
-
-        $sql = '';
-        $params = [];
-
-        switch ($field) {
-            case 'description':
-                // Verbesserte Abfrage für Beschreibungsvorschläge mit vollständigem Kontext
-                $sql = 'SELECT DISTINCT e.description, ABS(e.value) as value, e.category_id, e.project_id,
-                        c.name as category_name, c.color as category_color, c.type as category_type,
-                        p.name as project_name,
-                        (SELECT COUNT(*) FROM expenses e2 WHERE e2.description = e.description) as count
-                       FROM expenses e
-                       JOIN categories c ON e.category_id = c.id
-                       LEFT JOIN projects p ON e.project_id = p.id
-                       WHERE e.description LIKE :query';
-                
-                // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
-                $userId = $this->session->getUserId();
-                if ($userId) {
-                    $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
-                    $params[':user_id'] = $userId;
-                }
-                
-                if ($category_id) {
-                    $sql .= ' AND e.category_id = :category_id';
-                    $params[':category_id'] = $category_id;
-                }
-                if ($project_id) {
-                    $sql .= ' AND e.project_id = :project_id';
-                    $params[':project_id'] = $project_id;
-                }
-                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 10'; // Sortierung nach Häufigkeit und Datum
-                $params[':query'] = '%' . $query . '%';
-                break;
-
-            case 'value':
-                // Verbesserte Abfrage für Betragsvorschläge mit vollständigem Kontext
-                $sql = 'SELECT DISTINCT ABS(e.value) as value, e.description, e.category_id, e.project_id,
-                        c.name as category_name, c.color as category_color, c.type as category_type,
-                        p.name as project_name,
-                        (SELECT COUNT(*) FROM expenses e2 WHERE ABS(e2.value) = ABS(e.value) AND e2.category_id = e.category_id) as count
-                       FROM expenses e
-                       JOIN categories c ON e.category_id = c.id
-                       LEFT JOIN projects p ON e.project_id = p.id
-                       WHERE 1=1';
-                
-                // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
-                $userId = $this->session->getUserId();
-                if ($userId) {
-                    $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
-                    $params[':user_id'] = $userId;
-                }
-                
-                if ($category_id) {
-                    $sql .= ' AND e.category_id = :category_id';
-                    $params[':category_id'] = $category_id;
-                }
-                if ($project_id) {
-                    $sql .= ' AND e.project_id = :project_id';
-                    $params[':project_id'] = $project_id;
-                }
-                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 10'; // Sortierung nach Häufigkeit und Datum
-                break;
-                
-            case 'category':
-                // Verbesserte Abfrage für Kategorievorschläge basierend auf der Beschreibung
-                $sql = 'SELECT DISTINCT c.id, c.name, c.color, c.type, c.description,
-                        (SELECT COUNT(*) FROM expenses e WHERE e.category_id = c.id AND e.description LIKE :query) as relevance,
-                        (SELECT AVG(ABS(e.value)) FROM expenses e WHERE e.category_id = c.id AND e.description LIKE :query) as avg_value
-                       FROM categories c
-                       JOIN expenses e ON c.id = e.category_id
-                       WHERE e.description LIKE :query';
-                
-                // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
-                $userId = $this->session->getUserId();
-                if ($userId) {
-                    $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
-                    $params[':user_id'] = $userId;
-                }
-                
-                $sql .= ' GROUP BY c.id
-                       ORDER BY relevance DESC
-                       LIMIT 5';
-                $params[':query'] = '%' . $query . '%';
-                break;
-                
-            case 'complete':
-                // Neue Abfrage für vollständige Vorschläge (alle Felder)
-                $sql = 'SELECT e.description, ABS(e.value) as value, e.category_id, e.project_id,
-                        c.name as category_name, c.color as category_color, c.type as category_type,
-                        p.name as project_name,
-                        (SELECT COUNT(*) FROM expenses e2 WHERE e2.description = e.description) as count
-                       FROM expenses e
-                       JOIN categories c ON e.category_id = c.id
-                       LEFT JOIN projects p ON e.project_id = p.id
-                       WHERE e.description LIKE :query';
-                
-                // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
-                $userId = $this->session->getUserId();
-                if ($userId) {
-                    $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
-                    $params[':user_id'] = $userId;
-                }
-                
-                $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 10';
-                $params[':query'] = '%' . $query . '%';
-                break;
-        }
-
-        if ($sql) {
-            try {
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute($params);
-                $suggestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                header('Content-Type: application/json');
-                echo json_encode($suggestions);
-            } catch (\PDOException $e) {
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Datenbankfehler: ' . $e->getMessage()]);
+        // Setze den Content-Type Header früh
+        header('Content-Type: application/json; charset=utf-8');
+        
+        try {
+            $query = $_GET['query'] ?? '';
+            $field = $_GET['field'] ?? '';
+            $category_id = $_GET['category_id'] ?? null;
+            $project_id = $_GET['project_id'] ?? null;
+            
+            // Debug-Ausgabe
+            error_log("getSuggestions aufgerufen mit: field=$field, query=$query, category_id=$category_id, project_id=$project_id");
+    
+            $sql = '';
+            $params = [];
+    
+            switch ($field) {
+                case 'description':
+                    // Verbesserte Abfrage für Beschreibungsvorschläge mit vollständigem Kontext
+                    $sql = 'SELECT DISTINCT e.description, ABS(e.value) as value, e.category_id, e.project_id,
+                            c.name as category_name, c.color as category_color, c.type as category_type,
+                            p.name as project_name,
+                            (SELECT COUNT(*) FROM expenses e2 WHERE e2.description = e.description) as count
+                           FROM expenses e
+                           JOIN categories c ON e.category_id = c.id
+                           LEFT JOIN projects p ON e.project_id = p.id
+                           WHERE e.description LIKE :query';
+                    
+                    // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
+                    $userId = $this->session->getUserId();
+                    if ($userId) {
+                        $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+                        $params[':user_id'] = $userId;
+                    }
+                    
+                    if ($category_id) {
+                        $sql .= ' AND e.category_id = :category_id';
+                        $params[':category_id'] = $category_id;
+                    }
+                    if ($project_id) {
+                        $sql .= ' AND e.project_id = :project_id';
+                        $params[':project_id'] = $project_id;
+                    }
+                    $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 10'; // Sortierung nach Häufigkeit und Datum
+                    $params[':query'] = '%' . $query . '%';
+                    break;
+    
+                case 'value':
+                    // Verbesserte Abfrage für Betragsvorschläge mit vollständigem Kontext
+                    $sql = 'SELECT DISTINCT ABS(e.value) as value, e.description, e.category_id, e.project_id,
+                            c.name as category_name, c.color as category_color, c.type as category_type,
+                            p.name as project_name,
+                            (SELECT COUNT(*) FROM expenses e2 WHERE ABS(e2.value) = ABS(e.value) AND e2.category_id = e.category_id) as count
+                           FROM expenses e
+                           JOIN categories c ON e.category_id = c.id
+                           LEFT JOIN projects p ON e.project_id = p.id
+                           WHERE 1=1';
+                    
+                    // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
+                    $userId = $this->session->getUserId();
+                    if ($userId) {
+                        $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+                        $params[':user_id'] = $userId;
+                    }
+                    
+                    if ($category_id) {
+                        $sql .= ' AND e.category_id = :category_id';
+                        $params[':category_id'] = $category_id;
+                    }
+                    if ($project_id) {
+                        $sql .= ' AND e.project_id = :project_id';
+                        $params[':project_id'] = $project_id;
+                    }
+                    $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 10'; // Sortierung nach Häufigkeit und Datum
+                    break;
+                    
+                case 'category':
+                    // Verbesserte Abfrage für Kategorievorschläge basierend auf der Beschreibung
+                    $sql = 'SELECT DISTINCT c.id, c.name, c.color, c.type, c.description,
+                            (SELECT COUNT(*) FROM expenses e WHERE e.category_id = c.id AND e.description LIKE :query) as relevance,
+                            (SELECT AVG(ABS(e.value)) FROM expenses e WHERE e.category_id = c.id AND e.description LIKE :query) as avg_value
+                           FROM categories c
+                           JOIN expenses e ON c.id = e.category_id
+                           WHERE e.description LIKE :query';
+                    
+                    // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
+                    $userId = $this->session->getUserId();
+                    if ($userId) {
+                        $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+                        $params[':user_id'] = $userId;
+                    }
+                    
+                    $sql .= ' GROUP BY c.id
+                           ORDER BY relevance DESC
+                           LIMIT 5';
+                    $params[':query'] = '%' . $query . '%';
+                    break;
+                    
+                case 'complete':
+                    // Neue Abfrage für vollständige Vorschläge (alle Felder)
+                    $sql = 'SELECT e.description, ABS(e.value) as value, e.category_id, e.project_id,
+                            c.name as category_name, c.color as category_color, c.type as category_type,
+                            p.name as project_name,
+                            (SELECT COUNT(*) FROM expenses e2 WHERE e2.description = e.description) as count
+                           FROM expenses e
+                           JOIN categories c ON e.category_id = c.id
+                           LEFT JOIN projects p ON e.project_id = p.id
+                           WHERE e.description LIKE :query';
+                    
+                    // Benutzerfilter hinzufügen - nur Daten des angemeldeten Benutzers anzeigen
+                    $userId = $this->session->getUserId();
+                    if ($userId) {
+                        $sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
+                        $params[':user_id'] = $userId;
+                    }
+                    
+                    $sql .= ' ORDER BY count DESC, e.date DESC LIMIT 10';
+                    $params[':query'] = '%' . $query . '%';
+                    break;
             }
-        } else {
-            header('Content-Type: application/json');
-            echo json_encode([]);
+    
+            if ($sql) {
+                try {
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->execute($params);
+                    $suggestions = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                    
+                    // Stelle sicher, dass alle Werte UTF-8 kodiert sind
+                    $suggestions = array_map(function($item) {
+                        return array_map(function($value) {
+                            if (is_string($value)) {
+                                return mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+                            }
+                            return $value;
+                        }, $item);
+                    }, $suggestions);
+                    
+                    // Debug-Ausgabe in die Fehlerprotokolle
+                    error_log("Vorschläge gefunden: " . count($suggestions));
+                    
+                    // Stelle sicher, dass die Ausgabe gültiges JSON ist
+                    $jsonOptions = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+                    $jsonResult = json_encode($suggestions, $jsonOptions);
+                    
+                    if ($jsonResult === false) {
+                        // Fehler beim JSON-Encoding
+                        error_log("JSON-Encoding-Fehler: " . json_last_error_msg());
+                        
+                        // Versuche, die problematischen Zeichen zu entfernen
+                        $cleanedSuggestions = [];
+                        foreach ($suggestions as $suggestion) {
+                            $cleanedSuggestion = [];
+                            foreach ($suggestion as $key => $value) {
+                                if (is_string($value)) {
+                                    // Entferne nicht-UTF-8-Zeichen
+                                    $cleanedSuggestion[$key] = preg_replace('/[^\p{L}\p{N}\p{P}\p{Z}]/u', '', $value);
+                                } else {
+                                    $cleanedSuggestion[$key] = $value;
+                                }
+                            }
+                            $cleanedSuggestions[] = $cleanedSuggestion;
+                        }
+                        
+                        $jsonResult = json_encode($cleanedSuggestions, $jsonOptions);
+                        
+                        if ($jsonResult === false) {
+                            // Immer noch ein Fehler, gib ein leeres Array zurück
+                            error_log("JSON-Encoding-Fehler nach Bereinigung: " . json_last_error_msg());
+                            echo '[]';
+                            exit;
+                        }
+                    }
+                    
+                    echo $jsonResult;
+                } catch (\PDOException $e) {
+                    error_log("PDO-Fehler in getSuggestions: " . $e->getMessage());
+                    echo json_encode(['error' => 'Datenbankfehler: ' . $e->getMessage()], $jsonOptions);
+                }
+            } else {
+                echo '[]';
+            }
+        } catch (\Exception $e) {
+            error_log("Allgemeiner Fehler in getSuggestions: " . $e->getMessage());
+            echo json_encode(['error' => 'Fehler: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
+        
         exit;
     }
 } 

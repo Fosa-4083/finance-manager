@@ -323,13 +323,26 @@
                     .then(response => {
                         console.log('Server-Antwort erhalten:', response.status);
                         if (!response.ok) {
-                            throw new Error('Server-Antwort nicht OK');
+                            throw new Error('Server-Antwort nicht OK: ' + response.status);
                         }
-                        return response.json();
+                        return response.text().then(text => {
+                            if (!text) {
+                                console.log('Leere Antwort vom Server');
+                                return [];
+                            }
+                            
+                            try {
+                                return JSON.parse(text);
+                            } catch (e) {
+                                console.error('JSON-Parsing-Fehler:', e);
+                                console.error('Erhaltener Text:', text);
+                                return [];
+                            }
+                        });
                     })
                     .then(data => {
                         console.log('Erhaltene Vorschläge:', data);
-                        currentSuggestions = data;
+                        currentSuggestions = data || [];
                         currentSuggestionIndex = -1;
                         
                         descriptionSuggestions.innerHTML = '';
@@ -387,25 +400,46 @@
             function fetchValueSuggestions() {
                 const categoryId = categorySelect.value;
                 
+                console.log('fetchValueSuggestions aufgerufen mit Kategorie-ID:', categoryId);
+                
                 if (!categoryId) {
                     valueSuggestions.style.display = 'none';
                     return;
                 }
 
                 const projectId = projectSelect.value;
+                console.log('Projekt-ID für Betragsvorschläge:', projectId);
                 
                 // Cache-Busting durch Hinzufügen eines Zeitstempels
                 const cacheBuster = new Date().getTime();
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
+                
+                console.log('Betragsvorschläge werden abgerufen von URL:', url);
 
                 fetch(url)
                     .then(response => {
+                        console.log('Betragsvorschläge - Server-Antwort erhalten:', response.status);
                         if (!response.ok) {
-                            throw new Error('Server-Antwort nicht OK');
+                            throw new Error('Server-Antwort nicht OK: ' + response.status);
                         }
-                        return response.json();
+                        return response.text().then(text => {
+                            if (!text) {
+                                console.log('Leere Antwort vom Server');
+                                return [];
+                            }
+                            
+                            try {
+                                console.log('Erhaltener Text für Betragsvorschläge:', text);
+                                return JSON.parse(text);
+                            } catch (e) {
+                                console.error('JSON-Parsing-Fehler bei Betragsvorschlägen:', e);
+                                console.error('Erhaltener Text:', text);
+                                return [];
+                            }
+                        });
                     })
                     .then(data => {
+                        console.log('Erhaltene Betragsvorschläge:', data);
                         valueSuggestions.innerHTML = '';
                         
                         if (data && data.length > 0) {
