@@ -160,72 +160,88 @@
             </div>
         </div>
 
-        <!-- Monatsübersicht -->
+        <!-- Monatliche Übersicht -->
         <div class="row mb-4">
-            <div class="col-md-4">
+            <div class="col-md-12">
                 <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Ausgaben im aktuellen Monat</h5>
-                        <h2 class="text-danger"><?= number_format(abs($monthlyTotals['total_expenses'] ?: 0), 2, ',', '.'); ?> €</h2>
-                        <?php if ($lastMonthTotal != 0): ?>
-                            <?php 
-                            $change = $monthlyTotals['total_expenses'] != 0 ? 
-                                     (($monthlyTotals['total_expenses'] / $lastMonthTotal) - 1) * 100 : 
-                                     0; 
-                            ?>
-                            <small class="text-muted">
-                                <?= $change > 0 ? '+' : ''; ?><?= number_format($change, 1); ?>% zum Vormonat
-                            </small>
-                        <?php endif; ?>
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">Finanzübersicht <?= date('F Y'); ?></h5>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Einnahmen im aktuellen Monat</h5>
-                        <h2 class="text-success"><?= number_format($monthlyTotals['total_income'] ?: 0, 2, ',', '.'); ?> €</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Bilanz</h5>
-                        <?php $balanceClass = $monthlyTotals['balance'] >= 0 ? 'text-success' : 'text-danger'; ?>
-                        <h2 class="<?= $balanceClass; ?>">
-                            <?= number_format($monthlyTotals['balance'], 2, ',', '.'); ?> €
-                        </h2>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <h6 class="text-muted mb-2">Ausgaben</h6>
+                                        <h3 class="text-danger mb-0"><?= number_format(abs($monthlyTotals['total_expenses']), 2, ',', '.'); ?> €</h3>
+                                        <?php
+                                        // Vergleich zum Vormonat
+                                        if (isset($lastMonthTotal) && $lastMonthTotal != 0) {
+                                            $percentChange = (abs($monthlyTotals['total_expenses']) - abs($lastMonthTotal)) / abs($lastMonthTotal) * 100;
+                                            $changeClass = $percentChange > 0 ? 'text-danger' : 'text-success';
+                                            $changeIcon = $percentChange > 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right';
+                                            echo '<p class="small mt-2 mb-0 ' . $changeClass . '"><i class="bi ' . $changeIcon . '"></i> ' . 
+                                                 number_format(abs($percentChange), 1) . '% zum Vormonat</p>';
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <h6 class="text-muted mb-2">Einnahmen</h6>
+                                        <h3 class="text-success mb-0"><?= number_format($monthlyTotals['total_income'], 2, ',', '.'); ?> €</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <h6 class="text-muted mb-2">Bilanz</h6>
+                                        <h3 class="<?= $monthlyTotals['balance'] >= 0 ? 'text-success' : 'text-danger'; ?> mb-0">
+                                            <?= number_format($monthlyTotals['balance'], 2, ',', '.'); ?> €
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Ausgaben nach Kategorien -->
+        <!-- Hauptdashboard -->
         <div class="row mb-4">
+            <!-- Linke Spalte: Ausgaben nach Kategorien und Top Ausgaben -->
             <div class="col-md-6">
-                <div class="card">
+                <!-- Ausgaben nach Kategorien -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Ausgaben nach Kategorien</h5>
+                    </div>
                     <div class="card-body">
-                        <h5 class="card-title">Ausgaben nach Kategorien</h5>
-                        <?php if (empty($categoryTotals)): ?>
-                            <p class="text-muted">Keine Daten für den aktuellen Monat verfügbar.</p>
+                        <?php if (empty($categoryTotals) || !array_filter($categoryTotals, function($cat) { return $cat['total'] < 0; })): ?>
+                            <p class="text-muted">Keine Ausgaben für den aktuellen Monat verfügbar.</p>
                         <?php else: ?>
                             <div class="table-responsive">
-                                <table class="table">
+                                <table class="table table-sm">
                                     <thead>
                                         <tr>
                                             <th>Kategorie</th>
-                                            <th>Betrag</th>
-                                            <th>Anteil</th>
+                                            <th class="text-end">Betrag</th>
+                                            <th style="width: 40%">Anteil</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php 
                                         $totalExpenses = abs($monthlyTotals['total_expenses']);
-                                        foreach ($categoryTotals as $category): 
-                                            if ($category['total'] < 0): // Nur Ausgaben anzeigen
-                                                $amount = abs($category['total']);
-                                                $percentage = $totalExpenses > 0 ? ($amount / $totalExpenses) * 100 : 0;
+                                        $expenseCategories = array_filter($categoryTotals, function($cat) { return $cat['total'] < 0; });
+                                        usort($expenseCategories, function($a, $b) { return abs($b['total']) - abs($a['total']); });
+                                        
+                                        foreach (array_slice($expenseCategories, 0, 5) as $category): 
+                                            $amount = abs($category['total']);
+                                            $percentage = $totalExpenses > 0 ? ($amount / $totalExpenses) * 100 : 0;
                                         ?>
                                         <tr>
                                             <td>
@@ -233,157 +249,149 @@
                                                     <?= htmlspecialchars($category['name']); ?>
                                                 </span>
                                             </td>
-                                            <td><?= number_format($amount, 2, ',', '.'); ?> €</td>
+                                            <td class="text-end"><?= number_format($amount, 2, ',', '.'); ?> €</td>
                                             <td>
-                                                <div class="progress" style="height: 20px;">
+                                                <div class="progress" style="height: 8px;">
                                                     <div class="progress-bar" role="progressbar" 
                                                          style="width: <?= $percentage; ?>%; background-color: <?= $category['color']; ?>;" 
                                                          aria-valuenow="<?= $percentage; ?>" aria-valuemin="0" aria-valuemax="100">
-                                                        <?= number_format($percentage, 1); ?>%
                                                     </div>
                                                 </div>
+                                                <small class="text-muted"><?= number_format($percentage, 1); ?>%</small>
                                             </td>
                                         </tr>
-                                        <?php 
-                                            endif;
-                                        endforeach; 
-                                        ?>
+                                        <?php endforeach; ?>
+                                        
+                                        <?php if (count($expenseCategories) > 5): ?>
+                                        <tr>
+                                            <td colspan="3" class="text-center">
+                                                <a href="<?php echo \Utils\Path::url('/expenses'); ?>" class="btn btn-sm btn-outline-primary">
+                                                    Alle Kategorien anzeigen
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <?php endif; ?>
                                     </tbody>
                                 </table>
                             </div>
                         <?php endif; ?>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-6">
+                
+                <!-- Top Ausgaben -->
+                <?php if (isset($topExpenses) && is_array($topExpenses) && count($topExpenses) > 0): ?>
                 <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Monatliche Entwicklung</h5>
-                        <canvas id="monthlyChart" width="400" height="300"></canvas>
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Top Ausgaben diesen Monat</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            <?php foreach ($topExpenses as $expense): ?>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge me-2" style="background-color: <?= $expense['category_color']; ?>">
+                                            <?= htmlspecialchars($expense['category_name']); ?>
+                                        </span>
+                                        <span><?= htmlspecialchars($expense['description']); ?></span>
+                                    </div>
+                                    <div>
+                                        <span class="text-danger fw-bold"><?= number_format(abs($expense['value']), 2, ',', '.'); ?> €</span>
+                                        <small class="text-muted ms-2"><?= date('d.m.', strtotime($expense['date'])); ?></small>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Letzte Transaktionen -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Letzte Transaktionen</h5>
-                <?php if (isset($recentTransactions) && count($recentTransactions) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Datum</th>
-                                    <th>Kategorie</th>
-                                    <th>Beschreibung</th>
-                                    <th>Betrag</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($recentTransactions as $transaction): ?>
-                                <tr>
-                                    <td><?= date('d.m.Y', strtotime($transaction['date'])); ?></td>
-                                    <td>
-                                        <span class="badge" style="background-color: <?= $transaction['category_color']; ?>">
-                                            <?= htmlspecialchars($transaction['category_name']); ?>
-                                        </span>
-                                    </td>
-                                    <td><?= htmlspecialchars($transaction['description']); ?></td>
-                                    <td class="<?= $transaction['value'] < 0 ? 'text-danger' : 'text-success'; ?>">
-                                        <?= number_format($transaction['value'], 2, ',', '.'); ?> €
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <p class="text-muted">Keine Transaktionen gefunden.</p>
                 <?php endif; ?>
             </div>
-        </div>
-
-        <!-- Top Ausgaben -->
-        <?php if (isset($topExpenses) && is_array($topExpenses) && count($topExpenses) > 0): ?>
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Top Ausgaben</h5>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Datum</th>
-                                <th>Kategorie</th>
-                                <th>Beschreibung</th>
-                                <th>Betrag</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($topExpenses as $expense): ?>
-                            <tr>
-                                <td><?= date('d.m.Y', strtotime($expense['date'])); ?></td>
-                                <td>
-                                    <span class="badge" style="background-color: <?= $expense['category_color']; ?>">
-                                        <?= htmlspecialchars($expense['category_name']); ?>
-                                    </span>
-                                </td>
-                                <td><?= htmlspecialchars($expense['description']); ?></td>
-                                <td class="text-danger">
-                                    <?= number_format(abs($expense['value']), 2, ',', '.'); ?> €
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+            
+            <!-- Rechte Spalte: Monatliche Entwicklung und letzte Transaktionen -->
+            <div class="col-md-6">
+                <!-- Monatliche Entwicklung -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Monatliche Entwicklung</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="monthlyChart" width="400" height="250"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Letzte Transaktionen -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Letzte Transaktionen</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <?php if (isset($recentTransactions) && count($recentTransactions) > 0): ?>
+                            <div class="list-group list-group-flush">
+                                <?php foreach ($recentTransactions as $transaction): ?>
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <small class="text-muted me-2"><?= date('d.m.', strtotime($transaction['date'])); ?></small>
+                                            <span class="badge me-2" style="background-color: <?= $transaction['category_color']; ?>">
+                                                <?= htmlspecialchars($transaction['category_name']); ?>
+                                            </span>
+                                            <span><?= htmlspecialchars($transaction['description']); ?></span>
+                                        </div>
+                                        <span class="<?= $transaction['value'] < 0 ? 'text-danger' : 'text-success'; ?> fw-bold">
+                                            <?= number_format($transaction['value'], 2, ',', '.'); ?> €
+                                        </span>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                                <div class="list-group-item text-center">
+                                    <a href="<?php echo \Utils\Path::url('/expenses'); ?>" class="btn btn-sm btn-outline-primary">
+                                        Alle Transaktionen anzeigen
+                                    </a>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <p class="text-muted p-3">Keine Transaktionen gefunden.</p>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
-        <?php endif; ?>
 
         <!-- Aktive Projekte -->
         <?php if (!empty($activeProjects)): ?>
         <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">Aktive Projekte</h5>
+            </div>
             <div class="card-body">
-                <h5 class="card-title">Aktive Projekte</h5>
                 <div class="row">
-                    <?php foreach ($activeProjects as $project): ?>
-                    <div class="col-md-6 mb-3">
-                        <div class="card h-100">
-                            <div class="card-header d-flex justify-content-between align-items-center">
+                    <?php 
+                    // Sortiere Projekte nach Budget-Nutzung (absteigend)
+                    usort($activeProjects, function($a, $b) {
+                        $percentA = $a['budget'] > 0 ? abs($a['total_expenses']) / $a['budget'] * 100 : 0;
+                        $percentB = $b['budget'] > 0 ? abs($b['total_expenses']) / $b['budget'] * 100 : 0;
+                        return $percentB - $percentA;
+                    });
+                    
+                    foreach (array_slice($activeProjects, 0, 4) as $project): 
+                    ?>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-light py-2">
                                 <h6 class="card-title mb-0"><?= htmlspecialchars($project['name']); ?></h6>
-                                <span class="badge <?= $project['expense_count'] > 0 ? 'bg-primary' : 'bg-secondary'; ?>">
-                                    <?= $project['expense_count']; ?> Buchungen
-                                </span>
                             </div>
                             <div class="card-body">
-                                <div class="row mb-3">
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">Zeitraum</small>
-                                        <span class="d-block">
-                                            <?= $project['start_date'] ? date('d.m.Y', strtotime($project['start_date'])) : 'Nicht definiert'; ?>
-                                            <?= $project['end_date'] ? ' - ' . date('d.m.Y', strtotime($project['end_date'])) : ''; ?>
-                                        </span>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted d-block">Letzte Aktivität</small>
-                                        <span class="d-block">
-                                            <?= $project['last_activity'] ? date('d.m.Y', strtotime($project['last_activity'])) : 'Keine'; ?>
-                                        </span>
-                                    </div>
-                                </div>
-                                
                                 <?php if ($project['budget'] > 0): ?>
                                     <?php 
-                                    $percent = $project['budget'] > 0 ? 
-                                        round((abs($project['total_expenses']) / $project['budget']) * 100, 2) : 0;
+                                    $percent = round((abs($project['total_expenses']) / $project['budget']) * 100, 2);
                                     $colorClass = $percent > 100 ? 'bg-danger' : ($percent > 80 ? 'bg-warning' : 'bg-success');
                                     ?>
                                     <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span>Budgetnutzung</span>
+                                        <span>Budget</span>
                                         <span class="badge <?= $colorClass; ?>"><?= $percent; ?>%</span>
                                     </div>
-                                    <div class="progress mb-2" style="height: 10px;">
+                                    <div class="progress mb-2" style="height: 8px;">
                                         <div class="progress-bar <?= $colorClass; ?>" 
                                              role="progressbar" 
                                              style="width: <?= min(100, $percent); ?>%;" 
@@ -392,64 +400,35 @@
                                              aria-valuemax="100">
                                         </div>
                                     </div>
-                                    <div class="d-flex justify-content-between">
-                                        <small class="text-muted">
-                                            <?= number_format(abs($project['total_expenses']), 2, ',', '.'); ?> €
-                                        </small>
-                                        <small class="text-muted">
-                                            <?= number_format($project['budget'], 2, ',', '.'); ?> €
-                                        </small>
+                                    <div class="d-flex justify-content-between small text-muted">
+                                        <span><?= number_format(abs($project['total_expenses']), 2, ',', '.'); ?> €</span>
+                                        <span><?= number_format($project['budget'], 2, ',', '.'); ?> €</span>
                                     </div>
                                 <?php else: ?>
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span>Ausgaben</span>
-                                        <span class="text-danger fw-bold">
+                                    <div class="text-center py-2">
+                                        <span class="text-danger fw-bold d-block mb-1">
                                             <?= number_format(abs($project['total_expenses']), 2, ',', '.'); ?> €
                                         </span>
+                                        <small class="text-muted">Ausgaben gesamt</small>
                                     </div>
-                                    <?php if ($project['total_income'] > 0): ?>
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span>Einnahmen</span>
-                                        <span class="text-success fw-bold">
-                                            <?= number_format($project['total_income'], 2, ',', '.'); ?> €
-                                        </span>
-                                    </div>
-                                    <?php endif; ?>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span>Bilanz</span>
-                                        <span class="fw-bold <?= ($project['total_income'] + $project['total_expenses']) >= 0 ? 'text-success' : 'text-danger'; ?>">
-                                            <?= number_format($project['total_income'] + $project['total_expenses'], 2, ',', '.'); ?> €
-                                        </span>
-                                    </div>
-                                <?php endif; ?>
-                                
-                                <?php if ($project['active_months'] > 0): ?>
-                                <div class="mt-3">
-                                    <small class="text-muted d-block">Aktivität über <?= $project['active_months']; ?> Monate</small>
-                                    <div class="d-flex mt-1">
-                                        <?php for ($i = 0; $i < min(12, $project['active_months']); $i++): ?>
-                                            <div class="bg-primary" style="height: 4px; width: <?= 100 / min(12, $project['active_months']); ?>%; margin-right: 1px;"></div>
-                                        <?php endfor; ?>
-                                        <?php for ($i = $project['active_months']; $i < 12; $i++): ?>
-                                            <div class="bg-light" style="height: 4px; width: <?= 100 / 12; ?>%; margin-right: 1px;"></div>
-                                        <?php endfor; ?>
-                                    </div>
-                                </div>
                                 <?php endif; ?>
                             </div>
                             <div class="card-footer bg-transparent">
-                                <div class="d-flex justify-content-between">
-                                    <a href="<?php echo \Utils\Path::url('/expenses?project_id=' . $project['id']); ?>" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-list"></i> Buchungen
-                                    </a>
-                                    <a href="<?php echo \Utils\Path::url('/projects/show?id=' . $project['id']); ?>" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-eye"></i> Details
-                                    </a>
-                                </div>
+                                <a href="<?php echo \Utils\Path::url('/projects/show?id=' . $project['id']); ?>" class="btn btn-sm btn-outline-primary w-100">
+                                    Details anzeigen
+                                </a>
                             </div>
                         </div>
                     </div>
                     <?php endforeach; ?>
+                    
+                    <?php if (count($activeProjects) > 4): ?>
+                    <div class="col-12 text-center mt-2">
+                        <a href="<?php echo \Utils\Path::url('/projects'); ?>" class="btn btn-outline-primary">
+                            Alle Projekte anzeigen
+                        </a>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -467,23 +446,42 @@
                     {
                         label: 'Ausgaben',
                         data: <?= json_encode(array_column($monthlyData, 'expenses')); ?>,
-                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
                         borderColor: 'rgba(255, 99, 132, 1)',
                         borderWidth: 1
                     },
                     {
                         label: 'Einnahmen',
                         data: <?= json_encode(array_column($monthlyData, 'income')); ?>,
-                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
                         borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 1
                     }
                 ]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' €';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw.toFixed(2) + ' €';
+                            }
+                        }
                     }
                 }
             }
