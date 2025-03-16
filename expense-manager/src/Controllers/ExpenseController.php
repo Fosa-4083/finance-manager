@@ -629,6 +629,16 @@ class ExpenseController extends BaseController {
             }
         }
         
+        // Spezielle Behandlung für period_type=all
+        // Wenn period_type=all gesetzt ist, stellen wir sicher, dass keine Datumsbeschränkungen gesetzt sind
+        if (isset($filterParams['period_type']) && $filterParams['period_type'] === 'all') {
+            // Entferne Datumsbeschränkungen, die für andere period_types gelten könnten
+            unset($filterParams['month']);
+            unset($filterParams['year']);
+            unset($filterParams['start_date']);
+            unset($filterParams['end_date']);
+        }
+        
         // Debug-Ausgabe
         error_log("Extrahierte Filterparameter: " . print_r($filterParams, true));
         
