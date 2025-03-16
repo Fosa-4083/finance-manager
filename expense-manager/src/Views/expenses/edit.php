@@ -124,13 +124,45 @@
                                 <label for="category_id" class="form-label">Kategorie</label>
                                 <select class="form-select" id="category_id" name="category_id" required>
                                     <option value="">Bitte wählen...</option>
-                                    <?php foreach ($categories as $category): ?>
-                                    <option value="<?= $category['id']; ?>" 
-                                            <?= $category['id'] == $expense['category_id'] ? 'selected' : ''; ?>>
-                                        <?= htmlspecialchars($category['name']); ?>
-                                    </option>
-                                    <?php endforeach; ?>
+                                    <?php 
+                                    // Kategorien nach Typ und Nutzungshäufigkeit sortieren
+                                    $expenseCategories = [];
+                                    $incomeCategories = [];
+                                    
+                                    foreach ($categories as $category) {
+                                        if ($category['type'] === 'income') {
+                                            $incomeCategories[] = $category;
+                                        } else {
+                                            $expenseCategories[] = $category;
+                                        }
+                                    }
+                                    ?>
+                                    <optgroup label="Ausgaben" style="background-color: #f8f9fa;">
+                                        <?php foreach ($expenseCategories as $category): ?>
+                                        <option value="<?= $category['id']; ?>" 
+                                                data-color="<?= $category['color']; ?>" 
+                                                data-type="expense"
+                                                data-description="<?= htmlspecialchars($category['description'] ?? ''); ?>"
+                                                style="border-left: 4px solid <?= $category['color']; ?>; padding-left: 8px;"
+                                                <?= $category['id'] == $expense['category_id'] ? 'selected' : ''; ?>>
+                                            <?= htmlspecialchars($category['name']); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                    <optgroup label="Einnahmen" style="background-color: #e8f5e9;">
+                                        <?php foreach ($incomeCategories as $category): ?>
+                                        <option value="<?= $category['id']; ?>" 
+                                                data-color="<?= $category['color']; ?>" 
+                                                data-type="income"
+                                                data-description="<?= htmlspecialchars($category['description'] ?? ''); ?>"
+                                                style="border-left: 4px solid <?= $category['color']; ?>; padding-left: 8px;"
+                                                <?= $category['id'] == $expense['category_id'] ? 'selected' : ''; ?>>
+                                            <?= htmlspecialchars($category['name']); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
                                 </select>
+                                <small class="form-text text-muted category-description" id="category_description"></small>
                             </div>
                             
                             <div class="mb-3">
@@ -276,6 +308,8 @@
             function fetchCompleteSuggestions() {
                 const query = descriptionInput.value.trim();
                 
+                console.log('fetchCompleteSuggestions aufgerufen mit Query:', query);
+                
                 if (query.length < 2) {
                     descriptionSuggestions.style.display = 'none';
                     return;
@@ -284,16 +318,32 @@
                 // Cache-Busting durch Hinzufügen eines Zeitstempels
                 const cacheBuster = new Date().getTime();
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=complete&query=${encodeURIComponent(query)}&_=${cacheBuster}`;
+                
+                console.log('Vorschläge werden abgerufen von URL:', url);
 
                 fetch(url)
                     .then(response => {
                         if (!response.ok) {
-                            throw new Error('Server-Antwort nicht OK');
+                            throw new Error('Server-Antwort nicht OK: ' + response.status);
                         }
-                        return response.json();
+                        return response.text().then(text => {
+                            if (!text) {
+                                console.log('Leere Antwort vom Server');
+                                return [];
+                            }
+                            
+                            try {
+                                return JSON.parse(text);
+                            } catch (e) {
+                                console.error('JSON-Parsing-Fehler:', e);
+                                console.error('Erhaltener Text:', text);
+                                return [];
+                            }
+                        });
                     })
                     .then(data => {
-                        currentSuggestions = data;
+                        console.log('Erhaltene Vorschläge:', data);
+                        currentSuggestions = data || [];
                         currentSuggestionIndex = -1;
                         
                         descriptionSuggestions.innerHTML = '';
@@ -351,25 +401,45 @@
             function fetchValueSuggestions() {
                 const categoryId = categorySelect.value;
                 
+                console.log('fetchValueSuggestions aufgerufen mit Kategorie-ID:', categoryId);
+                
                 if (!categoryId) {
                     valueSuggestions.style.display = 'none';
                     return;
                 }
 
                 const projectId = projectSelect.value;
+                console.log('Projekt-ID für Betragsvorschläge:', projectId);
                 
                 // Cache-Busting durch Hinzufügen eines Zeitstempels
                 const cacheBuster = new Date().getTime();
                 const url = `<?php echo \Utils\Path::url('/expenses/suggestions'); ?>?field=value&category_id=${categoryId}&project_id=${projectId}&_=${cacheBuster}`;
+                
+                console.log('Betragsvorschläge werden abgerufen von URL:', url);
 
                 fetch(url)
                     .then(response => {
+                        console.log('Betragsvorschläge - Server-Antwort erhalten:', response.status);
                         if (!response.ok) {
-                            throw new Error('Server-Antwort nicht OK');
+                            throw new Error('Server-Antwort nicht OK: ' + response.status);
                         }
-                        return response.json();
+                        return response.text().then(text => {
+                            if (!text) {
+                                console.log('Leere Antwort vom Server');
+                                return [];
+                            }
+                            
+                            try {
+                                return JSON.parse(text);
+                            } catch (e) {
+                                console.error('JSON-Parsing-Fehler:', e);
+                                console.error('Erhaltener Text:', text);
+                                return [];
+                            }
+                        });
                     })
                     .then(data => {
+                        console.log('Erhaltene Betragsvorschläge:', data);
                         valueSuggestions.innerHTML = '';
                         
                         if (data && data.length > 0) {
