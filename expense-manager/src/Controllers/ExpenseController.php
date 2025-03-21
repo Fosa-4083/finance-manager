@@ -27,11 +27,16 @@ class ExpenseController extends BaseController {
         $category_id = isset($_GET['category_id']) ? $_GET['category_id'] : null;
         $project_id = isset($_GET['project_id']) ? $_GET['project_id'] : null;
         $type = isset($_GET['type']) ? $_GET['type'] : null;
+        $afa_filter = isset($_GET['afa']) ? $_GET['afa'] : null;
         
         // Neue Filter
         $description_search = isset($_GET['description_search']) ? $_GET['description_search'] : null;
         $min_amount = isset($_GET['min_amount']) && is_numeric($_GET['min_amount']) ? floatval($_GET['min_amount']) : null;
         $max_amount = isset($_GET['max_amount']) && is_numeric($_GET['max_amount']) ? floatval($_GET['max_amount']) : null;
+        
+        // Sortierparameter
+        $sort_column = isset($_GET['sort']) ? $_GET['sort'] : 'date';
+        $sort_direction = isset($_GET['direction']) && $_GET['direction'] === 'asc' ? 'ASC' : 'DESC';
         
         // Benutzerdefinierter Zeitraum oder Standardzeitraum
         if ($period_type === 'all') {
@@ -102,6 +107,14 @@ class ExpenseController extends BaseController {
             $count_params[':user_id'] = $userId;
         }
         
+        // AFA-Filter hinzufügen
+        if ($afa_filter !== null) {
+            $sql .= ' AND e.afa = :afa';
+            $count_sql .= ' AND e.afa = :afa';
+            $params[':afa'] = $afa_filter;
+            $count_params[':afa'] = $afa_filter;
+        }
+        
         // Kategorie-Filter hinzufügen, wenn ausgewählt
         if ($category_id) {
             $sql .= ' AND e.category_id = :category_id';
@@ -157,7 +170,18 @@ class ExpenseController extends BaseController {
         $total_pages = ceil($total_count / $per_page);
         
         // Sortierung und Paginierung hinzufügen
-        $sql .= ' ORDER BY e.date DESC LIMIT :limit OFFSET :offset';
+        $sort_map = [
+            'date' => 'e.date',
+            'category' => 'c.name',
+            'project' => 'p.name',
+            'description' => 'e.description',
+            'amount' => 'e.value'
+        ];
+        
+        // Standardsortierung nach Datum, wenn ungültige Spalte angegeben wurde
+        $sort_column_sql = isset($sort_map[$sort_column]) ? $sort_map[$sort_column] : 'e.date';
+        
+        $sql .= ' ORDER BY ' . $sort_column_sql . ' ' . $sort_direction . ' LIMIT :limit OFFSET :offset';
         $params[':limit'] = $per_page;
         $params[':offset'] = $offset;
         
@@ -356,7 +380,7 @@ class ExpenseController extends BaseController {
                     
                     header('Location: ' . $redirectUrl);
                     exit;
-                } else {
+            } else {
                     $_SESSION['error'] = 'Fehler beim Speichern der Buchung.';
                     error_log("ExpenseController::store - Fehler: Speichern fehlgeschlagen");
                     header('Location: ' . \Utils\Path::url('/expenses/create'));
@@ -440,9 +464,9 @@ class ExpenseController extends BaseController {
         if (!$category) {
             $_SESSION['error'] = 'Die ausgewählte Kategorie existiert nicht.';
             header('Location: ' . \Utils\Path::url('/expenses/edit?id=' . $id));
-            exit;
-        }
-        
+        exit;
+    }
+
         // Betrag basierend auf Kategorietyp anpassen (positiv für Einnahmen, negativ für Ausgaben)
         $value = abs($value); // Sicherstellen, dass der Wert positiv ist
         if ($category['type'] === 'expense') {

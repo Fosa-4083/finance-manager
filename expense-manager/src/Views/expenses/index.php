@@ -26,6 +26,26 @@
             font-size: 0.9em;
             padding: 5px 10px;
         }
+        /* Styles für sortierbare Spalten */
+        .sortable {
+            cursor: pointer;
+            position: relative;
+            padding-right: 20px !important;
+        }
+        .sortable::after {
+            content: '↕';
+            position: absolute;
+            right: 5px;
+            opacity: 0.3;
+        }
+        .sortable.asc::after {
+            content: '↑';
+            opacity: 1;
+        }
+        .sortable.desc::after {
+            content: '↓';
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -232,6 +252,19 @@
                     </div>
                 </div>
 
+                <!-- AFA-Filter -->
+                <div class="mt-3">
+                    <label class="form-label">Lohnsteuerrelevante Ausgaben (AFA)</label>
+                    <div class="btn-group w-100">
+                        <button type="button" class="btn <?= !isset($_GET['afa']) ? 'btn-primary' : 'btn-outline-primary'; ?>" 
+                                onclick="setAfaFilter(null)">Alle</button>
+                        <button type="button" class="btn <?= isset($_GET['afa']) && $_GET['afa'] === '1' ? 'btn-primary' : 'btn-outline-primary'; ?>" 
+                                onclick="setAfaFilter('1')">Nur AFA</button>
+                        <button type="button" class="btn <?= isset($_GET['afa']) && $_GET['afa'] === '0' ? 'btn-primary' : 'btn-outline-primary'; ?>" 
+                                onclick="setAfaFilter('0')">Keine AFA</button>
+                    </div>
+                </div>
+
                 <!-- Suchbutton -->
                 <div class="mt-3">
                     <button type="button" class="btn btn-primary w-100" onclick="updateFilters()">
@@ -307,11 +340,16 @@
                                                 <input class="form-check-input" type="checkbox" id="select-all">
                                             </div>
                                         </th>
-                                        <th>Datum</th>
-                                        <th>Kategorie</th>
-                                        <th>Projekt</th>
-                                        <th>Beschreibung</th>
-                                        <th>Betrag</th>
+                                        <th class="sortable <?= $sort_column === 'date' ? ($sort_direction === 'ASC' ? 'asc' : 'desc') : ''; ?>" 
+                                            onclick="sortTable('date')">Datum</th>
+                                        <th class="sortable <?= $sort_column === 'category' ? ($sort_direction === 'ASC' ? 'asc' : 'desc') : ''; ?>" 
+                                            onclick="sortTable('category')">Kategorie</th>
+                                        <th class="sortable <?= $sort_column === 'project' ? ($sort_direction === 'ASC' ? 'asc' : 'desc') : ''; ?>" 
+                                            onclick="sortTable('project')">Projekt</th>
+                                        <th class="sortable <?= $sort_column === 'description' ? ($sort_direction === 'ASC' ? 'asc' : 'desc') : ''; ?>" 
+                                            onclick="sortTable('description')">Beschreibung</th>
+                                        <th class="sortable <?= $sort_column === 'amount' ? ($sort_direction === 'ASC' ? 'asc' : 'desc') : ''; ?>" 
+                                            onclick="sortTable('amount')">Betrag</th>
                                         <th>Aktionen</th>
                                     </tr>
                                 </thead>
@@ -478,6 +516,27 @@
     </div>
 
     <script>
+        function sortTable(column) {
+            // Aktuelle URL-Parameter beibehalten
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Wenn die gleiche Spalte erneut geklickt wird, Sortierrichtung umkehren
+            const currentSort = urlParams.get('sort');
+            const currentDirection = urlParams.get('direction');
+            
+            let newDirection = 'desc';
+            if (currentSort === column && currentDirection === 'desc') {
+                newDirection = 'asc';
+            }
+            
+            // Sortierparameter setzen
+            urlParams.set('sort', column);
+            urlParams.set('direction', newDirection);
+            
+            // Zur sortierten URL navigieren
+            window.location.href = '<?php echo \Utils\Path::url('/expenses'); ?>?' + urlParams.toString();
+        }
+        
         function setPeriodType(type) {
             // Alle Zeitraum-Bereiche ausblenden
             document.getElementById('period-month').style.display = 'none';
@@ -514,6 +573,12 @@
         function setTypeFilter(type) {
             // Typ-Filter setzen und Filter aktualisieren
             window.currentType = type;
+            updateFilters();
+        }
+        
+        function setAfaFilter(afa) {
+            // AFA-Filter setzen und Filter aktualisieren
+            window.currentAfa = afa;
             updateFilters();
         }
         
@@ -576,6 +641,12 @@
                 url += `&type=${type}`;
             }
             
+            // AFA-Filter hinzufügen, wenn ausgewählt
+            const afa = window.currentAfa;
+            if (afa !== null) {
+                url += `&afa=${afa}`;
+            }
+            
             // Beschreibungssuche hinzufügen, wenn vorhanden
             if (description_search) {
                 url += `&description_search=${encodeURIComponent(description_search)}`;
@@ -627,6 +698,9 @@
             
             // Typ-Filter aus URL-Parameter initialisieren
             window.currentType = urlParams.get('type');
+            
+            // AFA-Filter aus URL-Parameter initialisieren
+            window.currentAfa = urlParams.get('afa');
             
             // Checkboxen für Massenbearbeitung
             const expenseCheckboxes = document.querySelectorAll('.expense-checkbox');

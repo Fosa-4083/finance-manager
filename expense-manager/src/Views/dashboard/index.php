@@ -174,7 +174,7 @@
                                     <div class="card-body text-center">
                                         <h6 class="text-muted mb-2">Ausgaben</h6>
                                         <h3 class="text-danger mb-0"><?= number_format(abs($monthlyTotals['total_expenses']), 2, ',', '.'); ?> €</h3>
-                                        <?php
+                            <?php 
                                         // Vergleich zum Vormonat
                                         if (isset($lastMonthTotal) && $lastMonthTotal != 0) {
                                             $percentChange = (abs($monthlyTotals['total_expenses']) - abs($lastMonthTotal)) / abs($lastMonthTotal) * 100;
@@ -184,18 +184,18 @@
                                                  number_format(abs($percentChange), 1) . '% zum Vormonat</p>';
                                         }
                                         ?>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
                                 <div class="card h-100 border-0 shadow-sm">
                                     <div class="card-body text-center">
                                         <h6 class="text-muted mb-2">Einnahmen</h6>
                                         <h3 class="text-success mb-0"><?= number_format($monthlyTotals['total_income'], 2, ',', '.'); ?> €</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
                                 <div class="card h-100 border-0 shadow-sm">
                                     <div class="card-body text-center">
                                         <h6 class="text-muted mb-2">Bilanz</h6>
@@ -307,7 +307,7 @@
                 </div>
                 <?php endif; ?>
             </div>
-            
+
             <!-- Rechte Spalte: Monatliche Entwicklung und letzte Transaktionen -->
             <div class="col-md-6">
                 <!-- Monatliche Entwicklung -->
@@ -420,7 +420,7 @@
                             </div>
                         </div>
                     </div>
-                    <?php endforeach; ?>
+                                <?php endforeach; ?>
                     
                     <?php if (count($activeProjects) > 4): ?>
                     <div class="col-12 text-center mt-2">
@@ -428,7 +428,7 @@
                             Alle Projekte anzeigen
                         </a>
                     </div>
-                    <?php endif; ?>
+                <?php endif; ?>
                 </div>
             </div>
         </div>
