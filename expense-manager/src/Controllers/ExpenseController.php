@@ -267,6 +267,11 @@ class ExpenseController extends BaseController {
             $total_sql .= ' AND (e.user_id = :user_id OR e.user_id IS NULL)';
         }
         
+        // AFA-Filter für die Gesamtsummen-Abfrage hinzufügen
+        if ($afa_filter !== null) {
+            $total_sql .= ' AND e.afa = :afa';
+        }
+        
         if ($min_amount !== null) {
             $total_sql .= ' AND ABS(e.value) >= :min_amount';
         }
@@ -380,7 +385,7 @@ class ExpenseController extends BaseController {
                     
                     header('Location: ' . $redirectUrl);
                     exit;
-            } else {
+                } else {
                     $_SESSION['error'] = 'Fehler beim Speichern der Buchung.';
                     error_log("ExpenseController::store - Fehler: Speichern fehlgeschlagen");
                     header('Location: ' . \Utils\Path::url('/expenses/create'));
