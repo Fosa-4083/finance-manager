@@ -26,6 +26,13 @@
             font-size: 0.9em;
             padding: 5px 10px;
         }
+        .badge.bg-info {
+            font-size: 0.8em;
+            padding: 3px 8px;
+        }
+        .badge i {
+            margin-right: 3px;
+        }
         /* Styles für sortierbare Spalten */
         .sortable {
             cursor: pointer;
@@ -364,9 +371,16 @@
                                         </td>
                                         <td><?= date('d.m.Y', strtotime($expense['date'])); ?></td>
                                         <td>
-                                            <span class="badge" style="background-color: <?= $expense['category_color']; ?>">
-                                                <?= htmlspecialchars($expense['category_name']); ?>
-                                            </span>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge me-2" style="background-color: <?= htmlspecialchars($expense['category_color']) ?>">
+                                                    <?= htmlspecialchars($expense['category_name']) ?>
+                                                </span>
+                                                <?php if ($expense['afa']): ?>
+                                                <span class="badge bg-info" title="Lohnsteuerrelevante Ausgabe">
+                                                    <i class="fas fa-receipt"></i> AFA
+                                                </span>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                         <td>
                                             <?php if (!empty($expense['project_name'])): ?>
